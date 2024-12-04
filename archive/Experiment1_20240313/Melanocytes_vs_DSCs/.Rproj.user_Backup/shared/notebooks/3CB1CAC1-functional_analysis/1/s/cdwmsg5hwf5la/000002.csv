@@ -1,0 +1,4 @@
+"0","```r
+setwd(\"Z:/Aktuell/Eigene Dateien/Eigene Dateien_Marc/R/Github/EKB/DSC_NGS/\")
+load(file = \"DSC_NGS.RData\")
+```"

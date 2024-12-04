@@ -1,0 +1,188 @@
+---
+title: "Next-generation sequencing - analysis with DESeq2"
+subtitle: "Comparison of gene expression in DSCs compared to melanocytes - functional analysis"
+author: "Marc Bender"
+date: '`r Sys.Date()`'
+knit: (function(input, ...) {
+    rmarkdown::render(
+      input,
+      output_dir = "../Results",
+      output_format = "pdf_document"
+    )
+  })
+output: 
+  word_document:
+    toc: true
+    keep_md: yes
+  pdf_document:
+    toc: true
+    fig_caption: yes
+    keep_md: yes
+  html_notebook:
+    theme: united
+    toc: true
+  html_document:
+    df_print: paged
+    toc: true
+    code_folding: "hide"
+header-includes: 
+- \usepackage[utf8]{inputenc} 
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \usepackage{float}
+- \let\origfigure\figure
+- \let\endorigfigure\endfigure
+- \renewenvironment{figure}[1][2] {\expandafter\origfigure\expandafter[H]} {\endorigfigure}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo    = FALSE,
+  dpi = 600,
+  dev = c("cairo_pdf", "png")
+)
+```
+
+```{r load_libraries, include = FALSE}
+library(DESeq2)
+library(tidyverse)
+library(clusterProfiler)
+library(corto)
+library(pathfindR)
+library(ggwordcloud)
+```
+
+```{r load_data}
+setwd("..")
+load(file = "DSC_NGS.RData")
+```
+
+```{r custom_functions, include = FALSE}
+## wrapper around ggwordcloud function to allow for character strings as mappings
+wordcloud_string <- function(data, nrow = 1, max_size = 30,...){
+  args <- list(...)
+  args <- lapply(args, function(x) if (rlang::is_string(x)) sym(x) else x)
+  set.seed(42)
+  ggplot(data, aes(!!!args)) +
+    geom_text_wordcloud(area_corr = TRUE) +
+    scale_size_area(max_size = max_size, trans = power_trans(1/.7)) +
+    facet_wrap(~Direction, nrow = nrow) + 
+    theme_minimal()
+}
+ 
+## ggwordcloud for pathway analyses
+ggwordpath <- function(data, z, score, n, dec = FALSE,...){
+  # data$Direction <- ifelse(data$ID %in% activatedGO, "Activated", "Repressed")
+  data <- data[order(data[[score]], decreasing = dec), ]
+  
+  ## extract the top 30 up and downregulated pathways
+  cloudInput <- rbind(
+    head(data[data[[z]] == "Activated",],n),
+    head(data[data[[z]] == "Repressed",],n)
+  )
+  wordcloud_string(data = cloudInput, label = "Term_Description", size = score,...)
+}
+```
+
+\newpage 
+# Resources and introduction
+
+This document includes the functional analysis for the comparison of RNASeq data from dermal stem cells (DSCs) and Melanocytes. The exploratory data analysis and differential expression analysis are included in separate files. Statistical methods are described in a separate .docx file. 
+
+For additional info on analysis workflows check: 
+DESEQ workflow: https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html 
+https://bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html  
+https://www.bigbioinformatics.org/r-and-rnaseq-analysis 
+https://github.com/bigbioinformatics/r-programming-and-rnaseq-workshop 
+ClusterProfiler: https://pubmed.ncbi.nlm.nih.gov/34557778/ 
+
+Sanity Check: 
+```{r Sanity_check}
+if(nrow(assay(dds)) == nrow(assay(rld)) & nrow(assay(dds)) == nrow(allRes) & nrow(assay(dds)) == nrow(res)){
+  print("DESeq object, transformed count matrix and results data.frame all have the same length. Sanity check passed.")
+} else {
+  print("One of the objects DEseq, transformed count matrix or results data.frame is different from the others. Sanity check failed.")
+}
+```
+
+\newpage
+# Pathway analysis (Wikipathways)
+
+Pathway analysis was conducted with the R package pathfindR combining a classical overrepresentation analysis with the information gained from protein interaction networks to take into account semantic relationships between differentially expressed genes. In total `r nrow(allResPath)` genes were expressed above a threshold of 10 counts in at least 5 samples. Out of these `r nrow(allResPath) - nrow(pathfindR_input)` did not have a documented gene symbol, leaving ``r nrow(pathfindR_input)` genes as input for the pathfindR workflow. Out of `nrow(sigRes)` differentially expressed genes, `r nrow(pathfindR_input[pathfindR_input$padj < 0.05,])` genes were kept in the workflow. 729 genes did not have any documented protein interaction in the PIN (protein interaction network), leaving 4680 genes as final input for the pathfindR enrichment. 
+
+(For the publication: pathfindR messages with number of genes into results.)
+
+```{r pathway_total_wikiPW, fig.width = 15, fig.height=24, fig.cap = "Pathway scores between melanocytes and DSCs. All pathways."}
+scoreMatrix <- score_terms(
+  enrichment_table = outputDf,
+  exp_mat = expMat,
+  cases = cases,
+  use_description = FALSE, # default FALSE
+  label_samples = FALSE, # default = TRUE
+  case_title = "Melanocytes", # default = "Case"
+  control_title = "DSCs", # default = "Control"
+  low = "blue", # default = "green"
+  mid = "#FFFFBF", # default = "black"
+  high = "red" # default = "red"
+)
+
+```
+
+In total `r nrow(scoreMatrix)` pathways were significantly altered. This high amount of regulated pathways impedes interpretaion especially due to a substantial overlap between certain pathways and biological processes. Therefore we chose to analyse only representative pathways. PathfindR offers an option to cluster pathways based on shared genes and assign a representative pathway to each cluster based on the lowest adjusted pvalue. This leads to reduction of superfluous information. Clusters were formed separately for all upregulated and all downregulated pathways, respectively.
+
+\newpage
+The top 30 activated and top 30 repressed pathways (based on a rank which was calculated as the square root of the fold-enrichment and the inverse logarithm of the pvalue) are shown in a wordcloud to facilitate biological inferences.
+
+```{r pathway_representative_wikiPW_wordcloud, fig.width = 15, fig.height=20, fig.cap = "Wordcloud of representative pathways. Top30 activated and repressed pathways are shown."}
+ggwordpath(representativeDf, z = "Direction", score = "rank", dec = TRUE, max_size = 50, n = 30, nrow = 2)
+```
+
+\newpage
+As representative pathways might be less known than other pathways in each cluster we also printed the clusters with the highest number of pathways in each respective cluster. For upregulated pathways only clusters with more than 3 pathways were kept, for downregulated pathways only clusters with more than 5 pathways were kept. 
+
+```{r pathway_representative_wikiPW_up, fig.width = 8.3, fig.height=11.7, fig.cap = "Activated pathways clustered by amount of shared genes."}
+enrichment_chart(upClustered[upClustered$Cluster %in% largeUpClusters,], plot_by_cluster = TRUE)
+```
+
+```{r pathway_representative_wikiPW_down, fig.width = 8.3, fig.height=11.7, fig.cap = "Repressed pathways clustered by amount of shared genes."}
+enrichment_chart(downClustered[downClustered$Cluster %in% largeDownClusters,], plot_by_cluster = TRUE)
+```
+
+\newpage
+# Master regulators\
+
+Master regulators are transcription factors or regulatory proteins at the top of a gene regulation hierarchy which target downstream effector proteins and orchestrate gene sets. The master regulator analysis was performed with the corto package. In a first approach 294 suggested master regulators (extracted from the corto package) and 36 skin marker genes (for melanocytes, DSCs and fibroblasts) were used as input for the algorithm. In a second approach only the 294 suggested master regulators without skin specific markers were used to identify novel regulatory genes.
+
+\newpage
+```{r master_reg_known, fig.width = 12, fig.height=18, fig.cap = "Master regulators identified with the corto package (supervised)."}
+mraplot(masterRegMarkers, mrs = 10)
+```
+
+\newpage
+```{r master_reg_unknown, fig.width = 12, fig.height=18, fig.cap = "Master regulators identified with the corto package (unsupervised)."}
+mraplot(masterRegNew, mrs = 10)
+```
+
+\newpage
+# Analysis of donor effects (high dispersion genes)
+
+Analysis has been conducted by using high dispersion genes as input for the goseq pipeline. Related terms were reduced with the rrvgo function reduceSimMatrix() with a similarity threshold of 0.7. The top 30 reduced terms are depcited in the wordcloud plot. A list of high dispersion genes will be provided for the publication as .csv.
+
+```{r pathway_high_disp, fig.width = 15, fig.height=10, fig.cap = "Wordcloud of reduced GOBP-terms. Top30 GOBP terms for high dispersion genes are shown."}
+## plot as ggwordcloud
+ggplot(head(reducedTerms, 30), aes(label = term, size = score)) +
+  geom_text_wordcloud(area_corr = TRUE) +
+  scale_size_area(max_size = 50, trans = power_trans(1/.7)) +
+  theme_minimal()
+```
+
+\newpage
+# Appenix
+
+## Session Info
+```{r}
+utils::sessionInfo()
+```

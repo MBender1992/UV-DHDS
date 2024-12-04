@@ -1,0 +1,4 @@
+"0","```r
+## Make summary plots
+dotplot(gseaRes, showCategory = 20)
+```"

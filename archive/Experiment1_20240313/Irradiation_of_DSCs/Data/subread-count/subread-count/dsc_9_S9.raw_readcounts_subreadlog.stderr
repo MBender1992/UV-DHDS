@@ -1,0 +1,53 @@
+
+        ==========     _____ _    _ ____  _____  ______          _____  
+        =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
+          =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
+            ====      \___ \| |  | |  _ <|  _  /|  __|   / /\ \ | |  | |
+              ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
+        ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
+	  v2.0.0
+
+//========================== featureCounts setting ===========================\\
+||                                                                            ||
+||             Input files : 1 BAM file                                       ||
+||                           o dsc_9_S9.bam                                   ||
+||                                                                            ||
+||             Output file : dsc_9_S9.raw_readcounts.tsv                      ||
+||                 Summary : dsc_9_S9.raw_readcounts.tsv.summary              ||
+||              Annotation : Homo_sapiens.GRCh38.98.gtf (GTF)                 ||
+||      Dir for temp files : /fsimb/groups-external/sfbcardosogr/ishita/r ... ||
+||                                                                            ||
+||                 Threads : 4                                                ||
+||                   Level : meta-feature level                               ||
+||              Paired-end : yes                                              ||
+||        Sorting PE Reads : never                                            ||
+||                                                                            ||
+||      Multimapping reads : not counted                                      ||
+|| Multi-overlapping reads : not counted                                      ||
+||   Min overlapping bases : 1                                                ||
+||                                                                            ||
+||          Chimeric reads : counted                                          ||
+||        Both ends mapped : not required                                     ||
+||                                                                            ||
+\\============================================================================//
+
+//================================= Running ==================================\\
+||                                                                            ||
+|| Load annotation file Homo_sapiens.GRCh38.98.gtf ...                        ||
+||    Features : 1371695                                                      ||
+||    Meta-features : 60623                                                   ||
+||    Chromosomes/contigs : 47                                                ||
+||                                                                            ||
+|| Process BAM file dsc_9_S9.bam...                                           ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 27502539                                             ||
+||    Successfully assigned alignments : 20958927 (76.2%)                     ||
+||    Running time : 1.82 minutes                                             ||
+||                                                                            ||
+||                                                                            ||
+|| Summary of counting results can be found in file "/fsimb/groups-external/  ||
+|| sfbcardosogr/ishita/results/subread-count/dsc_9_S9.raw_readcounts.tsv.sum  ||
+|| mary"                                                                      ||
+||                                                                            ||
+\\============================================================================//
+

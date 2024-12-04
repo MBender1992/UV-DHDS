@@ -1,0 +1,12 @@
+"0","```r
+## Wrapper around Heatmap function for quick generation of ComplexHeatmaps
+drawHeatmap <- function(matScaled, title = paste(\"Differentially Expressed genes (\", nrow(sigRes), \")\", sep =\"\"), ...){
+  Ht <- Heatmap(matScaled, col = col_fun,  top_annotation = annColors, column_title = title,
+                column_title_gp = gpar(fontsize = heatmapFontsize, fontface = \"bold\"),  show_column_names = FALSE,
+                show_row_names = FALSE, heatmap_legend_param = list(title_gp = gpar(fontsize = heatmapFontsize), 
+                                                                    labels_gp = gpar(fontsize = heatmapFontsize),
+                title = \"Row Z-score\", at = seq(-2,2,by=1),  color_bar=\"continuous\",title_position =\"topleft\", 
+                legend_height = unit(4, \"cm\")), ...)
+  draw(Ht, merge_legend = TRUE)
+}
+```"

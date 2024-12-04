@@ -1,0 +1,26 @@
+"0","```r
+# 5. Get the results and plot Volcano plot without filter within results function
+res_volcano <- results(dds)
+
+## annotate genes
+anno <- AnnotationDbi::select(org.Hs.eg.db, rownames(res_volcano),
+                              columns=c(\"ENSEMBL\", \"ENTREZID\", \"SYMBOL\", \"GENENAME\"),
+                              keytype=\"ENSEMBL\")
+
+# adding ENSEMBL gene ID as a column in significant differentially expression gene table.
+dat_volcano <- cbind(ENSEMBL = rownames(res_volcano), res_volcano)
+dat_volcano <- left_join(as.data.frame(dat_volcano), anno)
+res_volcano <- NULL
+
+## parameters for Volcano plot
+pointSize <- 3.5
+labSize   <- 5.5
+
+# plot Volcano
+# this only serves as diagnostic and representation tool. the actual fold change thresholds and pvalues change later due to the way the results function works
+volcanoPlot <- EnhancedVolcano(as.data.frame(dat_volcano), lab = dat_volcano$SYMBOL, selectLab = ifelse(dat_volcano$padj <= 1e-5 & abs(dat_volcano$log2FoldChange) >=1, dat_volcano$SYMBOL, NA),
+                x = 'log2FoldChange', y = 'padj', gridlines.major = FALSE, gridlines.minor = FALSE,
+                xlim = c(-10, 10), ylim = c(-5, 300), title = 'Trt vs. ctrl', 
+                pCutoff = pThres, FCcutoff = lfcThres, pointSize = pointSize, labSize = labSize) 
+volcanoPlot
+```"

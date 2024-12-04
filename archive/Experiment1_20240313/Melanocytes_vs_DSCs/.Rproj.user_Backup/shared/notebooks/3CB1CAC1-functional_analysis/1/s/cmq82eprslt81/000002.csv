@@ -1,0 +1,4 @@
+"0","```r
+gseaplot(gseaRes, geneSetID = \"GOCC_PIGMENT_GRANULE\",
+         title = \"GOCC_PIGMENT_GRANULE\")
+```"

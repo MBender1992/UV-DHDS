@@ -1,0 +1,5 @@
+"0","```r
+geneSets <- msigdbr(species = \"Homo sapiens\", category = \"C5\")
+geneSets <- geneSets %>%
+  select(gs_name, gene_symbol)
+```"

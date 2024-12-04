@@ -1,0 +1,7 @@
+"0","```r
+# shrink estimates and exlpore differences in MA plots
+plotMA(resShrunk, ylim = c(-4, 4), alpha = pThres, colSig = \"red2\", colNonSig = \"grey30\", main = \"MA plot with shrunken log fold changes\")
+###
+# WARNING: DO NOT ALWAS SHRINK EVERYTHING BY DEFAULT. Look at MA plot and Volcano plot to see if it makes sense
+### 
+```"

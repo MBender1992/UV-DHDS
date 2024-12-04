@@ -1,0 +1,6 @@
+"0","```r
+### plot MA plot
+
+# plot with original lfc
+plotMA(res, ylim = c(-4, 4), alpha = pThres, colSig = \"red2\", colNonSig = \"grey30\", main = \"MA plot with original log fold changes\")
+```"

@@ -1,0 +1,9 @@
+"0","```r
+nGenes <- 30
+topSignif <- head(order(allRes$padj, decreasing = FALSE),nGenes)
+labelsTop30 <- allRes[topSignif,]$SYMBOL
+matTop30  <- assay(rld)[topSignif, ]
+datScaled <- matTop30 %>%  t() %>% scale() %>%  t()
+
+drawHeatmap(datScaled, title = paste(\"Top \",nGenes,\" differentially expressed genes\", sep =\"\"))
+```"

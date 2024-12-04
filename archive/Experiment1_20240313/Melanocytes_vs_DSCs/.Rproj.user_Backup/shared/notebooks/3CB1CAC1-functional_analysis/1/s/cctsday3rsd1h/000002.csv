@@ -1,0 +1,4 @@
+"0","```r
+## Enrichment GO molecular function
+plot_GO(geneSetRef = geneSets, geneSet = overExpressed, category = \"GOMF\", showCategory = 20)
+```"

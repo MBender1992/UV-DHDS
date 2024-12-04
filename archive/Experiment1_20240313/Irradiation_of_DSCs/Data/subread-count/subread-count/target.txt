@@ -1,0 +1,11 @@
+Sample	group	Replicate
+dsc_2	dsc_ir	1
+dsc_4	dsc_ir	2
+dsc_6	dsc_ir	3
+dsc_8	dsc_ir	4
+dsc_10	dsc_ir	5
+dsc_1	dsc	1
+dsc_3	dsc	2
+dsc_5	dsc	3
+dsc_7	dsc	4
+dsc_9	dsc	5

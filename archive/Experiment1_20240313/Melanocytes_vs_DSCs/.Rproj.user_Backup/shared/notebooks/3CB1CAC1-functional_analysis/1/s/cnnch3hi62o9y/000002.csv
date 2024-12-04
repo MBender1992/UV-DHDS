@@ -1,0 +1,27 @@
+"0","```r
+## Deal with inf
+allResGSEA <- allRes %>%
+  mutate(padj = case_when(padj == 0 ~ .Machine$double.xmin,
+                          TRUE ~ padj)) %>%
+  mutate(gsea_metric = -log10(padj) * sign(log2FoldChange))
+
+## Remove NAs and order by GSEA
+allResGSEA <- allResGSEA %>%
+  filter(! is.na(gsea_metric)) %>%
+  arrange(desc(gsea_metric))
+
+## Get the ranked GSEA vector
+ranks <- allResGSEA %>%
+  select(SYMBOL, gsea_metric) %>%
+  distinct(SYMBOL, .keep_all = TRUE) %>%
+  deframe()
+
+## define Gene sets (GO)
+geneSets <- msigdbr(species = \"Homo sapiens\", category = \"C5\")
+geneSets <- geneSets %>%
+  select(gs_name, gene_symbol)
+
+## Run GSEA
+gseaRes <- GSEA(geneList = ranks, TERM2GENE = geneSets)
+gseaResDf <- as.data.frame(gseaRes)
+```"

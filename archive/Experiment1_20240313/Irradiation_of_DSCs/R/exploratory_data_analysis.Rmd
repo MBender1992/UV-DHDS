@@ -1,0 +1,387 @@
+---
+title: "Next-generation sequencing - analysis with DESeq2"
+subtitle: "Comparison of gene expression in DSCs after irradiation - exploratory data analysis"
+author: "Marc Bender"
+date: '`r Sys.Date()`'
+knit: (function(input, ...) {
+    rmarkdown::render(
+      input,
+      output_dir = "../Results",
+      output_format = "pdf_document"
+    )
+  })
+output: 
+  word_document:
+    toc: true
+    keep_md: yes
+  pdf_document:
+    toc: true
+    fig_caption: yes
+    keep_md: yes
+  html_notebook:
+    theme: united
+    toc: true
+  html_document:
+    df_print: paged
+    toc: true
+    code_folding: "hide"
+header-includes: 
+- \usepackage[utf8]{inputenc} 
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo = FALSE,
+  dev = "cairo_pdf"
+)
+```
+
+```{r load_libraries, include = FALSE}
+library(DESeq2)
+library(tidyverse)
+library(PoiClaClu)
+library(flextable)
+library(pheatmap)
+library(GGally)
+library(ekbSeq)
+library(ggprism)
+library(kableExtra)
+```
+
+```{r custom_functions, include = FALSE}
+## function to specify lower plot panel in ggpairs function
+lowerFn <- function(data, mapping, cols = NULL, ...) {
+  p <- ggplot(data = data, mapping = mapping) +
+    scale_x_continuous(breaks = seq(floor(min(data) / 5) * 5, ceiling(max(data) / 5) * 5, 2)) +
+    scale_y_continuous(breaks = seq(floor(min(data) / 5) * 5, ceiling(max(data) / 5) * 5, 2))
+  if (!is.null(cols)) p <- p + geom_point(aes(color = cols), alpha = 0.5) else p <- p + geom_point(alpha = 0.5)
+  p + geom_abline(intercept = 0, slope = 1, color = "red")
+}
+
+## function to plot genes with high dispersion
+high_disp_plot <- function(gene.ids, type) {
+  markerInd <- which(allRes$SYMBOL %in% gene.ids)
+  markerRld <- assay(rld)[markerInd, ]
+  markerDEG <- allRes[markerInd, ]
+  rownames(markerRld) <- markerDEG$SYMBOL
+
+  markerPlotDf <- markerRld %>%
+    as.data.frame() %>%
+    rownames_to_column("SYMBOL") %>%
+    gather("ID", "RLOG", -"SYMBOL") %>%
+    mutate(treatment = ifelse(str_detect(ID, "c"), "ctrl", "trt")) %>%
+    left_join(markerDEG[, c("SYMBOL", "padj")]) %>%
+    mutate(padj = paste("p.adj =", formatC(padj, format = "e", digits = 2))) %>%
+    mutate(batch = str_extract(.$ID, "\\d+")) %>%
+    filter(treatment == type)
+  markerPlotDf[-c(1:length(gene.ids)), ]$padj <- NA
+
+  markerPlotDf %>%
+    ggplot(aes(x = reorder(factor(SYMBOL), -RLOG), y = RLOG)) +
+    geom_bar(stat = "summary", fun = "mean", color = "black", fill = "royalblue") +
+    geom_point(aes(shape = batch), size = 2) +
+    ggsci::scale_fill_npg() +
+    scale_x_discrete(guide = "prism_offset") +
+    scale_y_continuous(guide = "prism_offset", limits = c(0, 17), expand = c(0, 0)) +
+    theme_prism(base_size = 12) +
+    theme(
+      axis.text.x = element_text(size = 7, angle = 90, hjust = 1),
+      legend.title = element_text()
+    ) +
+    xlab("") +
+    ylab("Rlog counts") +
+    guides(shape = guide_legend(title = "Batch")) +
+    ggtitle(paste0("Genes with dispersion >1 in ", type))
+}
+```
+
+```{r load_data}
+setwd("..")
+
+adjusted <- TRUE
+rdata <- if(adjusted == TRUE){
+  "DSC_NGS_UV_adjusted.RData"
+} else {
+  "DSC_NGS_UV.RData"
+}
+
+load(file = rdata)
+```
+
+\newpage 
+# Resources and introduction
+
+This document includes the exploratory data analysis for the comparison of RNASeq data from dermal stem cells (DSCs) and Melanocytes. The differential expression analysis and functional analysis (pathway analysis and GO terms) are included in separate files. Statistical methods are described in a separate .docx file. 
+
+For additional info on analysis workflows check: 
+DESEQ workflow: https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html 
+https://bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html  
+https://www.bigbioinformatics.org/r-and-rnaseq-analysis 
+https://github.com/bigbioinformatics/r-programming-and-rnaseq-workshop 
+ClusterProfiler: https://pubmed.ncbi.nlm.nih.gov/34557778/ 
+
+\newpage
+# Type of analysis
+```{r adjustment}
+if (adjusted == TRUE) {
+  print(paste("This analysis displays results adjusted for the ", factor2, " effect", sep = ""))
+} else {
+  print(paste("This analysis displays naive results without adjustment for batch effects", sep = ""))
+}
+```
+
+\newpage
+# Thresholds, design formula and number of transcripts
+
+```{r print_input}
+# transform into ngsekb function
+print_input(
+  SummarizedExp = se, DESeqObj = dds, pThres = pThres, lfcThres = lfcThres, minimumCount = minimumCount,
+  smallestGroupSize = smallestGroupSize, contrast = contrast
+)
+```
+
+```{r print_reads}
+print_reads(nread, nreadFiltered, minimumCount = minimumCount, smallestGroupSize = smallestGroupSize)
+```
+
+\newpage
+# Sample sheet data
+
+```{r sample_sheet2}
+sampleSheet %>%
+  flextable() %>%
+  fontsize(size = 9, part = "all") %>%
+  theme_zebra() %>%
+  emR::FitFlextableToPage(pgwidth = 7)
+```
+
+\newpage
+# Exploratory data analysis
+
+## Heatmap of Poisson distances between samples
+
+A heatmap of this distance matrix gives us an overview over similarities and dissimilarities between samples.
+* IMPORTANT:
+  + use Poisson distance for raw (non-normalized) count data
+  + use Euclidean distance for data normalized by regularized-logarithm transformation (rlog) or variance stablization transfromation (vst)
+
+```{r poisd, fig.cap = "Correlation of poisson distance calculated on raw counts."}
+pheatmap(samplePoisDistMatrix,
+  clustering_distance_rows = poisd$dd,
+  clustering_distance_cols = poisd$dd,
+  col = colorsPoisd
+)
+poisd <- NULL # remove big poisd object
+se <- NULL
+```
+
+\newpage
+## Transform data
+
+Which transformation to choose? The VST is much faster to compute and is less sensitive to high count outliers
+than the rlog. The rlog tends to work well on small datasets (n < 30), potentially outperforming the VST
+when there is a wide range of sequencing depth across samples (an order of magnitude difference).
+We therefore recommend the VST for medium-to-large datasets (n > 30). You can perform both transformations and
+compare the meanSdPlot or PCA plots generated, as described below.
+
+To show the effect of the transformation, in the figure below we plot the first sample against the second,
+first simply using the log2 function (after adding 1, to avoid taking the log of zero), and then using the
+VST and rlog-transformed values. For the log2 approach, we need to first estimate size factors to account for
+sequencing depth, and then specify normalized=TRUE. Sequencing depth correction is done automatically for the
+vst and rlog.
+
+```{r plot_transformations, fig.cap="Representative depiction of count transformation."}
+# build data set
+df <- bind_rows(
+  as_data_frame(log2(counts(dds, normalized = TRUE)[, 1:2] + 1)) %>%
+    mutate(transformation = "log2(x + 1)"),
+  as_data_frame(assay(vsd)[, 1:2]) %>% mutate(transformation = "vst"),
+  as_data_frame(assay(rld)[, 1:2]) %>% mutate(transformation = "rlog")
+)
+
+# assign column names
+colnames(df)[1:2] <- c("x", "y")
+
+# transform to factor
+lvls <- c("log2(x + 1)", "vst", "rlog")
+df$transformation <- factor(df$transformation, levels = lvls)
+
+# plot values
+ggplot(df, aes(x = x, y = y)) +
+  geom_hex(bins = 80) +
+  coord_fixed() +
+  facet_grid(. ~ transformation)
+```
+
+<!-- \newpage -->
+<!-- ## Effect of transformation on the variance -->
+
+<!-- The figure below plots the standard deviation of the transformed data, across samples, against the mean, using the  the regularized log transformation.  -->
+
+<!-- Note that the vertical axis in such plots is the square root of the variance over all samples, so including the variance due to the experimental conditions. While a flat curve of the square root of variance over the mean may seem like the goal of such transformations, this may be unreasonable in the case of datasets with many true differences due to the experimental conditions. -->
+
+<!-- ```{r} -->
+<!-- meanSdPlot(assay(vsd)) -->
+<!-- ``` -->
+
+\newpage
+## Check for outliers
+
+RNA-seq data sometimes contain isolated instances of very large counts that are apparently unrelated to the experimental or study design, and which may be considered outliers. There are many reasons why outliers can arise, including rare technical or experimental artifacts, read mapping problems in the case of genetically differing samples, and genuine, but rare biological events. In many cases, users appear primarily interested in genes that show a consistent behavior, and this is the reason why by default, genes that are affected by such outliers are set aside by DESeq2, or if there are sufficient samples, outlier counts are replaced for model fitting. These two behaviors are described below.
+
+The DESeq function calculates, for every gene and for every sample, a diagnostic test for outliers called Cook’s distance. Cook’s distance is a measure of how much a single sample is influencing the fitted coefficients for a gene, and a large value of Cook’s distance is intended to indicate an outlier count. The Cook’s distances are stored as a matrix available in assays(dds)[["cooks"]].
+
+The results function automatically flags genes which contain a Cook’s distance above a cutoff for samples which have 3 or more replicates. The p values and adjusted p values for these genes are set to NA. At least 3 replicates are required for flagging, as it is difficult to judge which sample might be an outlier with only 2 replicates. This filtering can be turned off with results(dds, cooksCutoff=FALSE).
+
+With many degrees of freedom – i.,e., many more samples than number of parameters to be estimated – it is undesirable to remove entire genes from the analysis just because their data include a single count outlier. When there are 7 or more replicates for a given sample, the DESeq function will automatically replace counts with large Cook’s distance with the trimmed mean over all samples, scaled up by the size factor or normalization factor for that sample. This approach is conservative, it will not lead to false positives, as it replaces the outlier value with the value predicted by the null hypothesis. This outlier replacement only occurs when there are 7 or more replicates, and can be turned off with DESeq(dds, minReplicatesForReplace=Inf).
+
+The default Cook’s distance cutoff for the two behaviors described above depends on the sample size and number of parameters to be estimated. The default is to use the 99% quantile of the F(p,m-p) distribution (with p the number of parameters including the intercept and m number of samples). The default for gene flagging can be modified using the cooksCutoff argument to the results function. For outlier replacement, DESeq preserves the original counts in counts(dds) saving the replacement counts as a matrix named replaceCounts in assays(dds). Note that with continuous variables in the design, outlier detection and replacement is not automatically performed, as our current methods involve a robust estimation of within-group variance which does not extend easily to continuous covariates. However, users can examine the Cook’s distances in assays(dds)[["cooks"]], in order to perform manual visualization and filtering if necessary.
+
+Note on many outliers: if there are very many outliers (e.g. many hundreds or thousands) reported by summary(res), one might consider further exploration to see if a single sample or a few samples should be removed due to low quality. The automatic outlier filtering/replacement is most useful in situations which the number of outliers is limited. When there are thousands of reported outliers, it might make more sense to turn off the outlier filtering/replacement (DESeq with minReplicatesForReplace=Inf and results with cooksCutoff=FALSE) and perform manual inspection: First it would be advantageous to make a PCA plot as described above to spot individual sample outliers; Second, one can make a boxplot of the Cook’s distances to see if one sample is consistently higher than others (here this is not the case):
+
+```{r cooks_distance, fig.width=6, fig.height= 4, fig.cap = "Sample-wise cook's distances."}
+par(mar = c(8, 5, 2, 2))
+boxplot(log10(assays(dds)[["cooks"]]), range = 0, las = 2)
+title("Cooks distance across samples")
+```
+
+\newpage
+## Principal component analysis (PCA)
+
+Die Hauptkomponentenanalyse oder *principal component analysis* (PCA) ist ein Verfahren zur Reduktion der Datendimensionalität und findet Anwendung bei komplexen Datensätzen (aus n Proben mit p gemessenen Merkmalen), um Muster oder Strukturen in den Daten zu erkennen und die Interpretation der Daten zu vereinfachen. Dies erfolgt durch Identifikation neuer unkorrelierter Variablen, den sog. Hauptkomponenten (PC = *principal component*), welche sukzessive die erklärte Varianz innerhalb eines Datensets maximieren. Die Berechnung dieser Hauptkomponenten erfolgt dabei durch Zentrieren der Daten und einen nachfolgenden iterativen Prozess, bei dem eine zufällige Gerade durch den Mittelwert der Datenpunkte gelegt und so lange rotiert wird, bis der Abstand der auf die Gerade projizierten Datenpunkte zum Zentrum maximal ist.
+Die Distanzen werden berechnet als:
+
+\begin{align*}
+SS(distances) = d^2_{1} + d^2_{2} + ... + d^2_{n}
+\end{align*}
+
+
+mit SS(distances) = Eigenwert (Quadratsumme der Distanzen), d = Distanz vom projizierten Datenpunkt zum Zentrum, n = Probengröße.
+
+Die Gerade mit dem größten Eigenwert wird als PC1 bezeichnet und trägt am meisten zur Varianzaufklärung bei. Im Anschluss wird die nächste Gerade gesucht, die orthogonal zur ersten Gerade ist und ebenfalls durch den Mittelwert der Datenpunkte verläuft. Nach diesem Grundsatz können (bis zur n-ten Hauptkomponente) weitere Hauptkomponenten gefunden werden, wobei diese stets orthogonal zu den bisherigen Hauptkomponenten stehen müssen.
+
+Die Reduktion der Dimensionalität beruht darauf, dass die jeweiligen Hauptkomponenten einen unterschiedlich großen (absteigend von PC1 zu PCn) Anteil der Datenvarianz erklären und es daher in den meisten Fällen ausreicht die ersten drei Hauptkomponenten zu analysieren (welche jeweils als 2-dimensionaler Plot gegeneinander aufgetragen werden), um Gemeinsamkeiten innerhalb der Proben zu identifizieren.
+				Der Anteil der Varianz, der durch die jeweilige Hauptkomponente erklärt wird ($var_{explained}$), kann anhand folgender Formel  berechnet werden:
+
+\begin{align*}
+var(PC_{i}) = \frac{SS(distances (PC_{i}))}{n-1}
+\end{align*}
+
+\begin{align*}
+var_{explained} = \frac{var(PC_{i})}{\sum^{n}_{j=1}var(PC_{j})}
+\end{align*}
+
+
+mit $PC_{i}$ = Hauptkomponente i. \newline
+
+Die PCA wurde in dem Statistikprogramm R mithilfe der Pakete *factoextra* und *FactoMineR* durchgeführt. Die Ermittlung relevanter Hauptkomponenten erfolgte mittels Skree Plot. Dort werden entweder die Eigenwerte oder die erklärte Varianz gegen die Nummer der jeweiligen Hauptkomponente aufgetragen und mittels einer zunächst steil abfallenden Linie, die sich asymptotisch der Abzisse annähert, verbunden. An dem sog. *elbow* ist ein deutlicher Knick in der Linie zu erkennen. Faktoren, die links dieses Punktes liegen reichen größtenteils aus, um Muster in den Daten zu erklären. Die anderen Faktoren unterscheiden sich oft nicht deutlich von Zufallskorrelationen und sind daher nicht von Bedeutung.
+
+```{r PCA, fig.width=8, fig.height= 3, fig.cap = "Principal component analysis with vst (left) and rlog (right)."}
+## plot pca for vst data
+
+## plot PCA
+pcaDataVST <- plotPCA(vsd, intgroup = c(factor1, factor2), returnData = TRUE)
+percentVarVST <- round(100 * attr(pcaDataVST, "percentVar"))
+
+## plot data with ggplot
+pcaVST <- pca_plot(data = pcaDataVST, percentVar = percentVarVST, type = "VST", fct1 = factor1, fct2 = factor2)
+
+## plot pca for rlog data
+pcaDataRlog <- plotPCA(rld, intgroup = c(factor1, factor2), returnData = TRUE)
+percentVarRlog <- round(100 * attr(pcaDataRlog, "percentVar"))
+
+# plot data with ggplot
+pcaRlog <- pca_plot(data = pcaDataRlog, percentVar = percentVarRlog, type = "Rlog", fct1 = factor1, fct2 = factor2)
+
+## arrange plots
+ggpubr::ggarrange(pcaVST, pcaRlog, nrow = 1, common.legend = TRUE)
+```
+
+\
+Add a labelled variant to identify possible batch effects.
+
+```{r PCA_labelled, dpi = 300, fig.width=8, fig.height= 3, fig.cap = "Principal component analysis with vst (left) and rlog (right) with labelled samples."}
+## plot pca for vst data
+
+## plot data with ggplot
+pcaVST <- pca_plot(data = pcaDataVST, percentVar = percentVarVST, fct1 = factor1, fct2 = factor2, type = "VST", labelled = TRUE)
+
+# plot data with ggplot
+pcaRlog <- pca_plot(data = pcaDataRlog, percentVar = percentVarRlog, fct1 = factor1, fct2 = factor2, type = "Rlog", labelled = TRUE)
+
+## arrange plots
+ggpubr::ggarrange(pcaVST, pcaRlog, nrow = 1, common.legend = TRUE)
+```
+
+\newpage
+## Dispersion plot
+
+Plotting the dispersion estimates is a useful diagnostic. The dispersion plot below shows the final estimates shrunk from the gene-wise estimates towards the fitted estimates. Some gene-wise estimates are flagged as outliers and not shrunk towards the fitted value, (this outlier detection is described in the manual page for estimateDispersionsMAP). The amount of shrinkage can vary, depending on the sample size, the number of coefficients, the row mean and the variability of the gene-wise estimates.
+
+```{r dispersion_plot, dpi = 300, fig.width=10, fig.height= 8, fig.cap = "Dispersion plot."}
+plotDispEsts(dds)
+```
+
+\
+There was a minimal batch effect present in the PCA plot (sample 27). Therefore a more detailled analysis of the dispersion is useful to further analyze this effect. In the following all genes with a dispersion estimate >1 are shown for DSCs and Melanocytes, respectively. The first plot depicts rlog gene counts for genes with a dispersion estimate >1 in DSCs. The second plot depicts rlog gene counts for genes with a dispersion estimate >1 in Melanocytes. The batch is indicated by different shapes.
+
+\newpage
+\blandscape
+```{r high_disp_dsc, fig.width=20, fig.height= 10, fig.cap = "Rlog counts in ctrl samples for high dispersion genes."}
+high_disp_plot(highDispGenes, type = "ctrl")
+```
+
+\elandscape
+
+\newpage
+\blandscape
+```{r high_disp_mc, fig.width=20, fig.height= 10, fig.cap = "Rlog counts in trt samples for high dispersion genes."}
+high_disp_plot(highDispGenes, type = "trt")
+```
+
+\elandscape
+
+\newpage
+## Scatter plot matrices
+
+These types of plots were suggested in https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-019-2968-1.
+They depict the correlation pairs of each sample with other samples. The spread of points should be closer to the identity line (red line) in technical replicates than in biological replicates because a larger spread indicates higher differences in expression values most often associated with differential expression. Divergence of the expected pattern (as described in the aforemented publication) should also warrant a closer inspection.
+
+```{r scatter_matrix, dpi = 300, fig.width=26, fig.height= 24, fig.cap = "Scatterplot matrix for rlog counts."}
+ggpairs(
+  data = as.data.frame(assay(rld)),
+  lower = list(continuous = wrap(lowerFn)),
+  upper = list(continuous = wrap(ggally_cor, stars = F, size = 8)),
+  xlab = c("Rlog counts"), ylab = "Rlog counts"
+) +
+  theme_classic(base_size = 26)
+```
+
+\newpage
+Scatter plot matrix indicating genes with high dispersion in red.
+
+```{r scatter_matrix_disp, dpi = 300, fig.width=26, fig.height= 24, fig.cap = "Scatterplot matrix for rlog counts with colored high dispersion genes."}
+pairDisp <- factor(ifelse(allRes$SYMBOL %in% highDispGenes, "high", "low"))
+ggpairs(
+  data = as.data.frame(assay(rld)),
+  lower = list(continuous = wrap(lowerFn, cols = pairDisp)),
+  upper = list(continuous = wrap(ggally_cor, stars = F, size = 8)),
+  xlab = c("Rlog counts"), ylab = "Rlog counts"
+) +
+  theme_classic(base_size = 26) +
+  scale_color_manual(values = c("red2", "black"))
+```
+
+\newpage
+# Appenix
+
+## Session Info
+```{r}
+utils::sessionInfo()
+```

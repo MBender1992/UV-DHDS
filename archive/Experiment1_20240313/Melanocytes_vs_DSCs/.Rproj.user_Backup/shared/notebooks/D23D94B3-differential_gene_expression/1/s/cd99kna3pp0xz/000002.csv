@@ -1,0 +1,17 @@
+"0","```r
+## plot pca for rlog data
+pcaDataRlog <- plotPCA(rld, intgroup = c(factor1, factor2), returnData = TRUE)
+percentVarRlog <- round(100 * attr(pcaDataRlog, \"percentVar\"))
+
+# plot data with ggplot
+pcaRlog <-  pca_plot(data = pcaDataRlog, percentVar = percentVarRlog, pointSize = 5, textSize = 16, type = \"Rlog\", 
+                     fct1 = factor1, fct2 = factor2)
+
+## combine graphs
+labelSize <- 24
+grob <- grid.grabExpr(draw(heatmapPlot))
+p1 <- ggarrange(NULL, pcaRlog, NULL,  nrow = 3, heights = c(0.25,0.6,0.15))
+p2 <- ggarrange(p1, NULL, volcanoPlot, nrow = 1, widths = c(0.5, 0.05, 0.5), labels = c(\"A\", \"\", \"B\"), 
+                font.label = list(size = labelSize))
+ggarrange(p2, NULL,  grob,nrow = 3, heights = c(0.4, 0.02, 0.8), labels = c(\"\", \"\", \"C\"), font.label = list(size = labelSize))
+```"

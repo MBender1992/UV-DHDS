@@ -1,0 +1,299 @@
+---
+title: "Next-generation sequencing - analysis with DESeq2"
+subtitle: "Comparison of gene expression in DSCs compared to melanocytes - functional analysis"
+author: "Marc Bender"
+date: '`r Sys.Date()`'
+knit: (function(input, ...) {
+    rmarkdown::render(
+      input,
+      output_dir = "../Results",
+      output_format = "pdf_document"
+    )
+  })
+output: 
+  word_document:
+    toc: true
+    keep_md: yes
+  pdf_document:
+    toc: true
+    fig_caption: yes
+    keep_md: yes
+  html_notebook:
+    theme: united
+    toc: true
+  html_document:
+    df_print: paged
+    toc: true
+    code_folding: "hide"
+header-includes: 
+- \usepackage[utf8]{inputenc} 
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \usepackage{float}
+- \let\origfigure\figure
+- \let\endorigfigure\endfigure
+- \renewenvironment{figure}[1][2] {\expandafter\origfigure\expandafter[H]} {\endorigfigure}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo    = FALSE,
+  dev = "cairo_pdf"
+)
+
+
+```
+
+```{r load_libraries, include = FALSE}
+library(DESeq2)
+library(tidyverse)
+library(clusterProfiler)
+library(enrichplot)
+library(corto)
+```
+
+```{r custom_functions, include = FALSE}
+## wrapper to plot GO terms
+plot_GO <- function(geneSetRef, geneSet, category, title = "Dotplot", ...){
+  gs <- geneSetRef[str_detect(geneSetRef$gs_name, category),]
+  enriched <- enricher(gene = geneSet, TERM2GENE = gs)
+  dotplot(enriched, label_format = Inf, ...) + ggtitle(title)
+}
+
+## function to enrich GO terms and remove redundant terms
+enrich_go <- function(gene.list, ont, type = "ORA"){
+  if(type == "ORA"){
+    ego <- enrichGO(names(gene.list), OrgDb = "org.Hs.eg.db", ont = ont, readable = TRUE)
+  } else if(type == "GSE"){
+    ego <- gseGO(geneList = gene.list, OrgDb = "org.Hs.eg.db", ont = ont, minGSSize = 5, 
+                 maxGSSize = 500, pvalueCutoff = 0.05, verbose = FALSE)
+  } else{
+    stop("Please specifiy either ORA for overrepresentation analysis or GSE for gene set enrichment.")
+  }
+  ego2 <- simplify(ego, cutoff = 0.7, by = "p.adjust", select_fun = min)
+  return(ego2)
+}
+
+## function to plot network 
+plot_network <- function(enrichedData, gene.list, search.string = NULL, widths = c(0.35,0.65)){
+  if(!is.null(search.string)){
+    showCategory <- enrichedData$Description[str_detect(enrichedData$Description, search.string)]
+  } else showCategory <- 20
+  dp  <- dotplot(enrichedData, label_format = Inf, showCategory = showCategory) + 
+    labs(tag = "A") +
+    theme(plot.tag = element_text(face = "bold", size = 20))
+  cnp <- cnetplot(enrichedData, color.params = list(foldChange = gene.list), 
+                  showCategory = if(is.numeric(showCategory)) ceiling(showCategory/4) else showCategory,
+                  cex.params = list(gene_label = 0.5, category_label = 0.5)) +
+    ggplot2::scale_color_gradientn(name = "Log2 fold change", colours = c("#053061", "#053061", "#2166ac","#4393c3", "#4393c3",
+                                                                          "#92c5de", "white", "#f4a582", "#d6604d", "#d6604d",
+                                                                          "#b2182b","#67001f" ,"#67001f"),
+                                   values = c(0, 0.075,0.2,0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.8, 0.925, 1), 
+                                   limits = c(-21, 21)) +
+    labs(tag = "B") + 
+    theme(plot.tag = element_text(face = "bold", size = 20))
+  ggpubr::ggarrange(dp, cnp, nrow = 1, widths = widths) + ggplot2::ggtitle("test")
+}
+```
+
+```{r load_data}
+setwd("..")
+load(file = "DSC_NGS.RData")
+```
+
+\newpage 
+# Resources and introduction
+
+This document includes the functional analysis for the comparison of RNASeq data from dermal stem cells (DSCs) and Melanocytes. The exploratory data analysis and differential expression analysis are included in separate files. Statistical methods are described in a separate .docx file. 
+
+For additional info on analysis workflows check: 
+DESEQ workflow: https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html 
+https://bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html  
+https://www.bigbioinformatics.org/r-and-rnaseq-analysis 
+https://github.com/bigbioinformatics/r-programming-and-rnaseq-workshop 
+ClusterProfiler: https://pubmed.ncbi.nlm.nih.gov/34557778/ 
+
+\newpage
+\blandscape
+# Overrepresentation analysis (ORA)
+
+Over-representation analysis (ORA) is used to determine which a priori defined gene sets are more present (over-represented) in a subset of “interesting” genes than what would be expected by chance (Huang et al., 2009).
+
+For example, if 10% of all genes being considered are “interesting” (statistically different between conditions, clustered together, etc.), we expect that about 10% of every gene set will be in this “interesting” group of genes. If any gene sets are significantly more present in this group, we would say they are over-represented. Note that we are not limited to analyzing genes, though that is how most databases are set up. So long as we have a feature-to-feature-set map, we can perform ORA.
+
+## GO Terms\
+
+The Gene Ontology (GO) is a taxonomy that is used to describe the normal molecular function of proteins, the cellular components in which proteins operate, and the larger biological processes in which they participate. 
+
+\newpage
+### GO: biological process\
+
+```{r GOBP_top_five, fig.width=20, fig.height=10, fig.cap= "Enriched GO terms for biological processes. ORA."}
+## define geneList
+geneList <- unlist(sigRes$log2FoldChange)
+names(geneList) <- sigRes$ENTREZID
+
+resEnrich <- enrich_go(gene.list = geneList, ont = "BP")
+plot_network(resEnrich, gene.list = geneList)
+```
+
+\newpage
+```{r GOBP_melanocytes,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for biological process involved in pigmentation and melanocyte specific processes. ORA."}
+plot_network(resEnrich, gene.list = geneList, search.string = "[Pp]igment|[Mm]elan")
+```
+
+\newpage
+### GO: molecular function\
+
+```{r GOMF_top5,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for molecular function. ORA."}
+resGO <- enrich_go(gene.list = geneList, ont = "MF", type = "ORA")
+plot_network(resGO, gene.list = geneList, widths = c(0.45,0.55))
+```
+
+\newpage
+```{r GOMF_membrane, fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for molecular function containing the term membrane. ORA."}
+plot_network(resGO, gene.list = geneList, search.string = "[Mm]embran", widths = c(0.45,0.55))
+```
+
+\newpage
+```{r GOMF_ECM,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for molecular function containing the terms matrix or ECM. ORA."}
+plot_network(resGO, gene.list = geneList, search.string = "matrix|ecm|ECM", widths = c(0.4,0.6))
+```
+
+\newpage
+### GO: cellular compartments\
+
+```{r GOCC_top5,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for cellular compartments. ORA."}
+resGO <- enrich_go(gene.list = geneList, ont = "CC", type = "ORA")
+plot_network(resGO, gene.list = geneList)
+```
+
+\newpage
+```{r GOCC_melanocytes,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for cellular compartments involved in pigmentation and melanocyte specific processes. ORA."}
+plot_network(resGO, gene.list = geneList, search.string = "[Pp]igment|[Mm]elan")
+```
+
+\newpage
+## KEGG pathway analysis\
+
+```{r KEGG_ORA,  fig.width=20, fig.height=10, fig.cap = "Enriched KEGG pathways. ORA."}
+kk <- enrichKEGG(gene = names(geneList), organism  = 'hsa',  pvalueCutoff = 0.05)
+kk <- setReadable(kk, 'org.Hs.eg.db', 'ENTREZID')
+plot_network(kk, gene.list = geneList)
+```
+
+\newpage
+```{r KEGG_OR_melanocytes,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for KEGG pathways involved in pigmentation and melanocyte specific processes. ORA."}
+plot_network(kk, gene.list = geneList, search.string = "[Pp]igment|[Mm]elan")
+```
+
+\newpage
+# Gene set enrichment analysis (GSEA)
+
+Gene Set Enrichment Analysis (GSEA) is a computational method that determines whether an a priori defined set of genes shows statistically significant, concordant differences between two biological states (e.g. phenotypes).
+
+## GO Terms
+
+The Gene Ontology (GO) is a taxonomy that is used to describe the normal molecular function of proteins, the cellular components in which proteins operate, and the larger biological processes in which they participate.
+
+\newpage
+### GO: biological process\
+
+```{r GSEA_GOBP_top5,  fig.width=20, fig.height=10, fig.cap =  "Enriched GO terms for biological processes. GSEA."}
+allResGSEA <- allRes %>%
+  mutate(padj = case_when(padj == 0 ~ .Machine$double.xmin,
+                          TRUE ~ padj)) %>%
+  mutate(gsea_metric = -log10(padj) * sign(log2FoldChange))
+
+## Remove NAs and order by GSEA
+allResGSEA <- allResGSEA %>%
+  filter(!is.na(gsea_metric)) %>%
+  arrange(desc(gsea_metric))
+
+## Get the ranked GSEA vector
+ranks <- allResGSEA %>%
+  select(ENTREZID, gsea_metric) %>%
+  distinct(ENTREZID, .keep_all = TRUE) %>%
+  deframe()
+
+## data with log2fcs
+geneList <- allResGSEA %>%
+  select(ENTREZID, log2FoldChange) %>%
+  distinct(ENTREZID, .keep_all = TRUE) %>%
+  deframe()
+
+## calculate enriched gene sets and plot network
+resGOgse <- enrich_go(gene.list = ranks, ont = "BP", type = "GSE")
+resGOgse <- setReadable(resGOgse, 'org.Hs.eg.db', 'ENTREZID')
+plot_network(resGOgse, gene.list = geneList)
+```
+
+\newpage
+#### Enriched pathways involved in pigmentation and melanocyte specific processes
+
+```{r GSEA_GOBP_melanocytes,  fig.width=20, fig.height=10, fig.cap =  "Enriched GO terms for biological processes involved in melanocyte development and pigmentation.  GSEA."}
+plot_network(resGOgse, gene.list = geneList, search.string = "[Pp]igment|[Mm]elan")
+```
+
+
+\newpage
+### GO: molecular function\
+
+```{r GSEA_GOMF_top5,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for molecular function. GSEA."}
+resGOgse <- enrich_go(gene.list = ranks, ont = "MF", type = "GSE")
+resGOgse <- setReadable(resGOgse, 'org.Hs.eg.db', 'ENTREZID')
+plot_network(resGOgse, gene.list = geneList)
+```
+
+\newpage
+### GO: cellular compartments\
+
+```{r GSEA_GOCC_top5,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for cellular compartments. GSEA."}
+resGOgse <- enrich_go(gene.list = ranks, ont = "CC", type = "GSE")
+resGOgse <- setReadable(resGOgse, 'org.Hs.eg.db', 'ENTREZID')
+plot_network(resGOgse, gene.list = geneList)
+```
+
+\newpage
+
+```{r GSEA_GOCC_melanocytes,  fig.width=20, fig.height=10, fig.cap = "Enriched GO terms for cellular compartments involved in pigmentation and melanocyte specific processes. GSEA."}
+plot_network(resGOgse, gene.list = geneList, search.string = "[Pp]igment|[Mm]elan")
+```
+
+\newpage
+## KEGG pathway analysis
+
+### Top5 enriched pathways
+```{r KEGG_GSEA,  fig.width=20, fig.height=10, fig.cap = "Enriched KEGG pathways. GSEA."}
+kk2 <- gseKEGG(gene = ranks, organism  = 'hsa',  pvalueCutoff = 0.05,verbose = FALSE)
+kk2 <- setReadable(kk2, 'org.Hs.eg.db', 'ENTREZID')
+plot_network(kk2, gene.list = geneList)
+```
+
+\elandscape
+
+\newpage
+# Master regulators\
+
+Master regulators are transcription factors or regulatory proteins at the top of a gene regulation hierarchy which target downstream effector proteins and orchestrate gene sets. The master regulator analysis was performed with the corto package. In a first approach 294 suggested master regulators (extracted from the corto package) and 36 skin marker genes (for melanocytes, DSCs and fibroblasts) were used as input for the algorithm. In a second approach only the 294 suggested master regulators without skin specific markers were used to identify novel regulatory genes.
+
+\newpage
+```{r master_reg_known, fig.width = 12, fig.height=18, fig.cap = "Master regulators identified with the corto package (supervised)."}
+mraplot(masterRegMarkers, mrs = 10)
+```
+
+\newpage
+```{r master_reg_unknown, fig.width = 12, fig.height=18, fig.cap = "Master regulators identified with the corto package (unsupervised)."}
+mraplot(masterRegNew, mrs = 10)
+```
+
+\newpage
+# Appenix
+
+## Session Info
+```{r}
+utils::sessionInfo()
+```

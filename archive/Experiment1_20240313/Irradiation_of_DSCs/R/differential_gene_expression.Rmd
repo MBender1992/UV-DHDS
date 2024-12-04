@@ -1,0 +1,317 @@
+---
+title: "Next-generation sequencing - analysis with DESeq2"
+subtitle: "Comparison of gene expression in DSCs after irradiation - differential expression analysis"
+author: "Marc Bender"
+date: '`r Sys.Date()`'
+knit: (function(input, ...) {
+    rmarkdown::render(
+      input,
+      output_dir = "../Results",
+      output_format = "pdf_document"
+    )
+  })
+output: 
+  word_document:
+    toc: true
+    keep_md: yes
+  pdf_document:
+    toc: true
+    keep_md: yes
+  html_notebook:
+    theme: united
+    toc: true
+  html_document:
+    df_print: paged
+    toc: true
+    code_folding: "hide"
+header-includes: 
+- \usepackage[utf8]{inputenc} 
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo = FALSE,
+  dev = "cairo_pdf",
+  fig.pos = "H"
+)
+```
+
+```{r load_libraries, include = FALSE}
+library(DESeq2)
+library(tidyverse)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+library(EnhancedVolcano)
+library(pheatmap)
+library(ComplexHeatmap)
+library(ggprism)
+library(ggpubr)
+library(circlize)
+library(RColorBrewer)
+library(ekbSeq)
+```
+
+```{r custom_functions, include = FALSE}
+```
+
+```{r load_data}
+setwd("..")
+rdata <- "DSC_NGS_UV_adjusted.RData"
+load(file = rdata)
+```
+
+\newpage 
+# Resources and introduction
+
+This document includes the differential expression analysis for the comparison of RNASeq data from dermal stem cells (DSCs) and Melanocytes. The exploratory data analysis and functional analysis (pathway analysis and GO terms) are included in separate files. Statistical methods are described in a separate .docx file. 
+
+For additional info on analysis workflows check: 
+DESEQ workflow: https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html 
+https://bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html  
+https://www.bigbioinformatics.org/r-and-rnaseq-analysis 
+https://github.com/bigbioinformatics/r-programming-and-rnaseq-workshop 
+ClusterProfiler: https://pubmed.ncbi.nlm.nih.gov/34557778/ 
+
+\newpage
+# Differential expression analysis
+
+## Overview
+
+```{r overview}
+summary(res) %>% knitr::kable()
+```
+
+\newpage
+## Volcano Plot (most differentially expressed genes labelled)
+
+Volcano plots are commonly used to display the results of RNA-seq or other omics experiments. A volcano plot is a type of scatterplot that shows statistical significance (P value) versus magnitude of change (fold change). It enables quick visual identification of genes with large fold changes that are also statistically significant. These may be the most biologically significant genes. In a volcano plot, the most upregulated genes are towards the right, the most downregulated genes are towards the left, and the most statistically significant genes are towards the top.
+
+This plot shows the most significantly changed genes (<= 1e-30, logFC >= |8|). 
+
+```{r Volcano_plot_sig,  fig.width=15, fig.height= 13, fig.cap = "Volcano plot showing differentially expressed genes between trt and ctrl."}
+# 5. Get the results and plot Volcano plot without filter within results function
+res_volcano <- results(dds)
+
+## annotate genes
+anno <- AnnotationDbi::select(org.Hs.eg.db, rownames(res_volcano),
+  columns = c("ENSEMBL", "ENTREZID", "SYMBOL", "GENENAME"),
+  keytype = "ENSEMBL"
+)
+
+# adding ENSEMBL gene ID as a column in significant differentially expression gene table.
+dat_volcano <- cbind(ENSEMBL = rownames(res_volcano), res_volcano)
+dat_volcano <- left_join(as.data.frame(dat_volcano), anno)
+res_volcano <- NULL
+
+## parameters for Volcano plot
+pointSize <- 3.5
+labSize <- 5.5
+
+# plot Volcano
+# this only serves as diagnostic and representation tool. the actual fold change thresholds and pvalues change later due to the way the results function works
+volcanoPlot <- EnhancedVolcano(as.data.frame(dat_volcano),
+  lab = dat_volcano$SYMBOL, selectLab = ifelse(dat_volcano$padj <= 1e-5 & abs(dat_volcano$log2FoldChange) >= 1, dat_volcano$SYMBOL, NA),
+  x = "log2FoldChange", y = "padj", gridlines.major = FALSE, gridlines.minor = FALSE,
+  xlim = c(-10, 10), ylim = c(-5, 300), title = "Trt vs. ctrl",
+  pCutoff = pThres, FCcutoff = lfcThres, pointSize = pointSize, labSize = labSize
+)
+volcanoPlot
+```
+
+
+\newpage
+## Volcano Plot (melanoma markers labelled)
+
+```{r Volcano_plot_melanoma,  fig.width=15, fig.height= 13, fig.cap = "Volcano plot showing differentially expressed genes between trt and ctrl."}
+##
+dat_volcano_aux <- dat_volcano[!dat_volcano$SYMBOL %in% MelanomaMarkerGenes$SYMBOL, ]
+dat_volcano_markers <- rbind(dat_volcano_aux, dat_volcano[dat_volcano$SYMBOL %in% MelanomaMarkerGenes$SYMBOL, ])
+
+## define colors
+keyvals.colour <- ifelse(dat_volcano_markers$SYMBOL %in% MelanomaMarkerGenes[MelanomaMarkerGenes$TYPE == "Melanoma_up", ]$SYMBOL, "black",
+  ifelse(dat_volcano_markers$SYMBOL %in% MelanomaMarkerGenes[MelanomaMarkerGenes$TYPE == "Melanoma_down", ]$SYMBOL, "forestgreen",
+    ifelse(abs(dat_volcano_markers$log2FoldChange) > 0.58 & dat_volcano_markers$padj < 0.05,
+      "#FA8072", "grey50"
+    )
+  )
+)
+keyvals.colour[is.na(keyvals.colour)] <- "grey50"
+names(keyvals.colour)[keyvals.colour == "black"] <- "Melanoma up"
+names(keyvals.colour)[keyvals.colour == "forestgreen"] <- "Melanoma down"
+names(keyvals.colour)[keyvals.colour == "#FA8072"] <- "Differentially expressed"
+names(keyvals.colour)[keyvals.colour == "grey50"] <- "NS"
+
+## define alph level
+keyvals.alpha <- ifelse(keyvals.colour %in% c("black", "forestgreen"), 1, 0.4)
+
+EnhancedVolcano(as.data.frame(dat_volcano_markers),
+  lab = dat_volcano_markers$SYMBOL, selectLab = MelanomaMarkerGenes$SYMBOL,
+  x = "log2FoldChange", y = "padj", gridlines.major = FALSE, gridlines.minor = FALSE,
+  xlim = c(-10, 10), ylim = c(-5, 300), title = "Trt vs. ctrl", colCustom = keyvals.colour,
+  colAlpha = keyvals.alpha, drawConnectors = TRUE, widthConnectors = 1.0, colConnectors = "black",
+  arrowheads = FALSE, max.overlaps = 30,
+  pCutoff = pThres, FCcutoff = lfcThres, pointSize = pointSize, labSize = labSize
+)
+```
+
+
+\newpage
+## MA plot
+
+An MA-plot (Dudoit et al. 2002) provides a useful overview for the distribution of the estimated
+coefficients in the model, e.g. the comparisons of interest, across all genes. On the y-axis, the “M”
+stands for “minus” – subtraction of log values is equivalent to the log of the ratio – and on the x-axis,
+the “A” stands for “average”. You may hear this plot also referred to as a mean-difference plot, or a
+Bland-Altman plot.
+
+Before making the MA-plot, we use the lfcShrink function to shrink the log2 fold changes for the comparison
+of trt vs. ctrl. There are three types of shrinkage estimators in DESeq2, which are covered
+in the DESeq2 vignette. Here we specify the apeglm method for shrinking coefficients, which is good for shrinking
+the noisy LFC estimates while giving low bias LFC estimates for true large differences (Zhu, Ibrahim, and Love 2018).
+To use apeglm we specify a coefficient from the model to shrink, either by name or number as the coefficient appears
+in resultsNames(dds).
+
+```{r MA_plot, fig.width=7, fig.height= 7, fig.cap = "MA plot with original log fold changes."}
+### plot MA plot
+
+# plot with original lfc
+plotMA(res, ylim = c(-4, 4), alpha = pThres, colSig = "red2", colNonSig = "grey30", colLine = "red2", main = "MA plot with original log fold changes")
+```
+
+<br> 
+
+```{r MA_plot_shrunk, fig.width=7, fig.height= 7, fig.cap = "MA plot with shrunken log fold changes."}
+# shrink estimates and exlpore differences in MA plots
+plotMA(resShrunk, ylim = c(-4, 4), alpha = pThres, colSig = "red2", colNonSig = "grey30", colLine = "red2", main = "MA plot with shrunken log fold changes")
+###
+# WARNING: DO NOT ALWAS SHRINK EVERYTHING BY DEFAULT. Look at MA plot and Volcano plot to see if it makes sense
+###
+```
+
+\newpage
+## Heatmap
+
+If using either of Euclidean distance or Pearson correlation, data should follow a Gaussian /
+normal (parametric) distribution. So, if coming from a microarray, anything from RMA normalisation is fine,
+whereas, if coming from RNA-seq, any data deriving from a transformed normalised count metric should be fine,
+such as variance-stabilised, regularised log, or log CPM expression levels.
+
+If you are performing clustering on non-normal data, like 'normalised' [non-transformed] RNA-seq counts,
+FPKM expression units, etc., then use Spearman correlation (non-parametric).
+
+```{r Heatmap_function}
+## Wrapper around Heatmap function for quick generation of ComplexHeatmaps
+drawHeatmap <- function(matScaled, title = paste("Differentially Expressed genes (", nrow(sigRes), ")", sep = ""),
+                        show_row_names = FALSE, show_column_names = FALSE, ...) {
+  Ht <- Heatmap(matScaled,
+    col = col_fun, top_annotation = annColors, column_title = title,
+    column_title_gp = gpar(fontsize = heatmapFontsize, fontface = "bold"), show_column_names = show_column_names,
+    show_row_names = show_row_names, heatmap_legend_param = list(
+      title_gp = gpar(fontsize = heatmapFontsize),
+      labels_gp = gpar(fontsize = heatmapFontsize),
+      title = "Row Z-score", at = seq(-2, 2, by = 1), color_bar = "continuous", title_position = "topleft",
+      legend_height = unit(4, "cm")
+    ), ...
+  )
+  draw(Ht, merge_legend = TRUE)
+}
+```
+
+\newpage
+### All differentially expressed (DE) genes
+```{r Heatmap, fig.width=12, fig.height= 12, fig.cap = "Heatmap of all differentially expressed genes."}
+## specify fontsize
+heatmapFontsize <- 18
+
+# Heatmap of all DE genes
+matAll <- assay(rld)[sigRes$ENSEMBL, ]
+## scale matrix
+datScaled <- matAll %>%
+  t() %>%
+  scale() %>%
+  t()
+
+## specify annotation bar
+annoHeatmap <- as.data.frame(colData(rld)[, c("treatment")])
+colnames(annoHeatmap) <- "Treatment"
+
+## specify annotation bar colors
+annColors <- HeatmapAnnotation(
+  df = annoHeatmap,
+  col = list(Treatment = c(
+    "ctrl" = ggsci::pal_npg("nrc")(2)[1], "trt" =
+      ggsci::pal_npg("nrc")(2)[2]
+  )),
+  annotation_legend_param = list(
+    Treatment = list(nrow = 1),
+    title_gp = gpar(fontsize = heatmapFontsize),
+    labels_gp = gpar(fontsize = heatmapFontsize)
+  ),
+  annotation_name_gp = gpar(fontsize = heatmapFontsize, fontface = "bold")
+)
+
+## define color function
+col_fun <- colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
+
+## print heatmap
+heatmapPlot <- drawHeatmap(datScaled, title = paste("Differentially Expressed genes (", nrow(sigRes), ")", sep = ""))
+```
+
+\newpage
+### Top 30 DE genes
+```{r HeatmapTop30, fig.width=12, fig.height= 11, fig.cap = "Heatmap of the Top30 differentially expressed genes."}
+nGenes <- 30
+topSignif <- head(order(allRes$padj, decreasing = FALSE), nGenes)
+labelsTop30 <- allRes[topSignif, ]$SYMBOL
+matTop30 <- assay(rld)[topSignif, ]
+rownames(matTop30) <- labelsTop30
+datScaled <- matTop30 %>%
+  t() %>%
+  scale() %>%
+  t()
+
+drawHeatmap(datScaled, title = paste("Top ", nGenes, " differentially expressed genes", sep = ""), show_row_names = TRUE)
+```
+
+\newpage
+# Publication Figures
+
+\newpage
+## Figure1
+
+```{r Figure1, fig.width=15, fig.height=24, fig.fullwidth = TRUE, fig.fullheight = TRUE, fig.cap = "Figure 1."}
+## plot pca for rlog data
+pcaDataRlog <- plotPCA(rld, intgroup = c(factor1, factor2), returnData = TRUE)
+percentVarRlog <- round(100 * attr(pcaDataRlog, "percentVar"))
+
+# plot data with ggplot
+pcaRlog <- pca_plot(
+  data = pcaDataRlog, percentVar = percentVarRlog, pointSize = 5, textSize = 16, type = "Rlog",
+  fct1 = factor1, fct2 = factor2
+)
+
+## combine graphs
+labelSize <- 24
+grob <- grid.grabExpr(draw(heatmapPlot))
+p1 <- ggarrange(NULL, pcaRlog, NULL, nrow = 3, heights = c(0.25, 0.6, 0.15))
+p2 <- ggarrange(p1, NULL, volcanoPlot,
+  nrow = 1, widths = c(0.5, 0.05, 0.5), labels = c("A", "", "B"),
+  font.label = list(size = labelSize)
+)
+ggarrange(p2, NULL, grob, nrow = 3, heights = c(0.4, 0.02, 0.8), labels = c("", "", "C"), font.label = list(size = labelSize))
+```
+
+
+\newpage
+# Appenix
+
+## Session Info
+```{r}
+utils::sessionInfo()
+```

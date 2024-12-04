@@ -1,0 +1,4 @@
+"0","```r
+## Enrichment GO cellular compartments
+plot_GO(geneSetRef = geneSets, geneSet = overExpressed, category = \"GOCC\", showCategory = 20)
+```"

@@ -1,0 +1,29 @@
+"0","```r
+## specify fontsize
+heatmapFontsize <- 18
+
+# Heatmap of all DE genes
+matAll <- assay(rld)[sigRes$ENSEMBL,]
+## scale matrix
+datScaled <- matAll %>%  t() %>% scale() %>%  t()
+
+## specify annotation bar
+annoHeatmap <- as.data.frame(colData(rld)[, c(\"treatment\")])
+colnames(annoHeatmap) <- \"Treatment\"
+
+## specify annotation bar colors
+annColors <- HeatmapAnnotation(df =annoHeatmap,
+                               col = list(Treatment = c(\"ctrl\" = ggsci::pal_npg(\"nrc\")(2)[1], \"trt\" =
+                                                          ggsci::pal_npg(\"nrc\")(2)[2])),
+                               annotation_legend_param = list(Treatment = list(nrow=1), 
+                                                              title_gp = gpar(fontsize = heatmapFontsize), 
+                                                              labels_gp = gpar(fontsize = heatmapFontsize)),
+                               annotation_name_gp = gpar(fontsize = heatmapFontsize, fontface = \"bold\"))
+
+## define color function
+col_fun <-  colorRampPalette(rev(brewer.pal(n = 7, name = \"RdYlBu\")))(100)
+
+## print heatmap
+heatmapPlot <- drawHeatmap(datScaled, title = paste(\"Differentially Expressed genes (\", nrow(sigRes), \")\", sep =\"\"))
+heatmapPlot
+```"

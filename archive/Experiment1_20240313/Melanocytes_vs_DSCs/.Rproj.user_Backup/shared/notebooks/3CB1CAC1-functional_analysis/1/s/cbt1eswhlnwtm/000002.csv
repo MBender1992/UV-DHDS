@@ -1,0 +1,13 @@
+"0","```r
+overExpressed <- sigRes %>%
+  filter(log2FoldChange > 0) %>%
+  pull(SYMBOL)
+
+underExpressed <- sigRes %>%
+  filter(log2FoldChange < 0) %>%
+  pull(SYMBOL)
+
+geneSets <- msigdbr(species = \"Homo sapiens\", category = \"H\")
+geneSets <- geneSets %>%
+  select(gs_name, gene_symbol)
+```"
