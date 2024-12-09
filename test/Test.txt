@@ -1,0 +1,9 @@
+Data has been combined (collapseReplicates) from 3 runs: 
+Run1: NextSeq1000 at EKB (13.03.2024), 15 samples
+Run2: NGS from Darmstadt: 10 samples (5x DSC controls, 5x Melanocyte controls)
+Run3: NextSeq1000 at EKB: 69 samples
+
+To be refined
+
+Test
+
