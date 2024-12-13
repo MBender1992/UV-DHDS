@@ -1,0 +1,120 @@
+melanocyte differentiation
+Acts as a tumour suppressor and plays a role in apoptosis
+down-regulates apoptosis signal-regulating kinase 1, a protein that initiates a signalling cascade that leads to apoptosis when cells are subjected to cytotoxic stresses.
+promotes poly-ubiquitination and degradation by the proteasome pathway of ZIC2
+complex to eliminate compromised BTB dimers is required for the differentiation and survival of neural crest and neuronal cells
+
+
+
+
+
+cell-cell and cell-matrix interactions
+E3 ubiquitin-protein ligase
+negative regulator of neural cell growth,  cell adhesion proteins
+phagocytosis of apoptotic cells and cell motility
+
+methyl groups from O(6)-alkyl-guanine and other methylated moieties of the DNA to its own molecule, which repairs the toxic lesions
+
+deacetylase involved in removing ADP-ribose from mono-ADP-ribosylated proteins
+DNA annealing helicase and endonuclease required to maintain genome stability at stalled or collapsed replication forks
+Ras protein signal transduction,dimerizes with BRAF and promotes BRAF-mediated phosphorylation of MAP2K1/MEK1 
+
+ histone methyltransferase
+deacetylase involved in removing ADP-ribose from mono-ADP-ribosylated proteins
+ cell division control protein 42 effector protein family.
+component of a multiprotein E3 ubiquitin ligase complex that mediates the targeting of substrate proteins for proteasomal degradation
+ methyltransferase that acts in the formation of trimethyllysine in calmodulin
+
+May play a role in cell differentiation and apoptosis
+cell-to-cell interactions as well as cell-matrix interactions during development and differentiation. 
+
+GTPase-activating protein for ARF1 and, to a lesser extent, ARF5
+
+
+oxidative deamination of peptidyl lysine residues in precursors of elastin and different types of collagens, a prerequisite in the formation of cross-links between collagens and elastin
+acts as a tumor suppressor, and the loss of its expression is an early event in cell transformation and the development of some tumors, coinciding with cellular plasticity
+ Involved in G2/M transition of mitotic cell cycle and regulation of canonical Wnt signaling pathway
+
+
+
+
+Promotes endocytosis of EGFR in cancer cells, and thereby contributes to the down-regulation of EGFR signaling
+ proinflammatory activation of macrophages
+Candidate tumor suppressor gene
+
+
+mediating cell attachment and inducing integrin-mediated cellular reactions
+mediate the attachment, migration, and organization of cells into tissues during embryonic development by interacting with other extracellular matrix components.
+⬆
+
+
+
+E3 ubiquitin ligase induced during late erythropoiesis
+
+candidate tumor suppressor gene for esophageal squamous cell carcinomas
+
+ anti-apoptotic, death receptor-associated protein that interacts with tumor necrosis factor-receptor-1.
+Involved in defense response to tumor cell; negative regulation of MAPK cascade
+his gene encodes a member of a small family of focal adhesion proteins which interacts with ILK (integrin-linked kinase), a protein which effects protein-protein interactions with the extraceullar matrix.
+gene encodes a cell surface glycoprotein that regulates complement-mediated cell lysis, and it is involved in lymphocyte signal transduction.
+including the MAP kinase (MAPK), NF-kappa B, and glycogen synthase kinase-3 (GSK-3) signaling pathways
+a histone acetyltransferase complex that associates directly with RNA polymerase II during transcriptional elongation.
+This family of proteins is thought to be involved in the formation of filamentous networks in the extracellular matrices of various tissues.
+DNA repair by homologous recombination
+ regulate the concentration of the glycolytic byproduct fructose-2,6-bisphosphate (F2,6BP). The encoded protein is highly expressed in cancer cells and is induced by hypoxia. This protein is essential to the survival of cancer cells under conditions of hypoxia, because it increases the amount of F2,6BP and ATP at a time when the cell cannot produce much of them
+RHO GTPase-activating proteins (GAPs), such as ARHGAP15
+Enables signaling receptor activity. Predicted to be involved in negative regulation of axon regeneration. Actually helps in the ptm of GPI anchored proteins, these are the proteins that are control cell to cell adhesion, activate T cells,
+This gene is a member of the PDGF/VEGF growth factor family and encodes a protein that is often found as a disulfide linked homodimer. This protein is a glycosylated mitogen that specifically acts on endothelial cells and has various effects, including mediating increased vascular permeability, inducing angiogenesis, vasculogenesis and endothelial cell growth, promoting cell migration, and inhibiting apoptosis. 
+synaptic cell adhesion molecule 1 (SynCAM) family which belongs to the immunoglobulin (Ig) superfamily
+ gene is a mitogen induced GTPase activating protein (GAP). It exhibits a specific GAP activity for Ras-related regulatory proteins Rap1 and Rap2
+E3 ubiquitin-protein ligase which ubiquitinates itself in cooperation with an E2 enzyme UBE2D2/UBC4 and serves as a targeting signal for proteasomal degradation.
+provides instructions for making a protein that plays a role in the cell machinery that breaks down (degrades) unwanted proteins, called the ubiquitin-proteasome system
+involved in transmembrane receptor protein tyrosine kinase signaling pathway.
+Predicted to enable GTPase activator activity and protein heterodimerization activity. Predicted to be involved in activation of GTPase activity. Predicted to act upstream of or within Ral protein signal transduction; regulation of exocyst localization; and regulation of protein localization.
+Acts as a cell adhesion ligand for skin epithelial cells and fibroblasts
+
+Arresten, comprising the C-terminal NC1 domain, inhibits angiogenesis and tumor formation. The C-terminal half is found to possess the anti-angiogenic activity. Specifically inhibits endothelial cell proliferation, migration and tube formation.
+Isoform 1 acts as a transcriptional repressor.
+Predicted to be involved in cellular response to fluid shear stress; negative regulation of epithelial cell proliferatio
+Fibrillar collagen molecules are trimers that can be composed of one or more types of alpha chains. Type V collagen is found in tissues containing type I collagen and appears to regulate the assembly of heterotypic fibers composed of both type I and type V collagen.
+Binds to heterochromatin
+The F-box proteins constitute one of the four subunits of ubiquitin protein ligase complex called SCFs (SKP1-cullin-F-box), which function in phosphorylation-dependent ubiquitination. also mediates ubiquitination of MAP4K1/HPK1: recognizes and binds autophosphorylated MAP4K1/HPK1, leading to its degradation, thereby affecting cell proliferation and differentiation
+Participates in MYC-mediated cell transformation and apoptosis; induces anchorage-independent growth and clonogenicity in lymphoblastoid cells. Insufficient to induce tumorigenicity when overexpressed but contributes to MYC-mediated tumorigenesis. May play a role as transcriptional regulator.
+nvolved in positive regulation of canonical Wnt signaling pathway. Located in cytoplasmic vesicle and plasma membrane.
+Serine/threonine-protein kinase involved in various processes such as neuronal proliferation, differentiation, migration and programmed cell death.
+ Involved in protein modification by small protein conjugation. Acts upstream of or within cellular response to DNA damage stimulus and positive regulation of G1/S transition of mitotic cell cycle. Predicted to be active in nucleus.
+he protein encoded by this gene functions together with DNA ligase IV and the DNA-dependent protein kinase in the repair of DNA double-strand breaks
+This gene is a member of the collagen gene family and is thought to regulate type I collagen fibrillogenesis during fetal development. 
+Plays a role in cell adhesion and cell migration
+Predicted to enable protein serine/threonine kinase activity. Predicted to be involved in mitotic DNA damage checkpoint signaling and protein autophosphorylation. Predicted to be located in perinuclear region of cytoplasm. Predicted to be active in cytoplasm and nucleus.
+Associates with the de novo DNA methylation machinery and repressive chromatin remodeling complexes (By similarity).
+Tyrosine-protein phosphatase which regulates cell motility, proliferation and muscle-response to insulin. Tensin is a focal adhesion molecule that binds to actin filaments and participates in signaling pathways.
+The protein encoded by this gene is a member of the E2F family of transcription factors. The E2F family plays a crucial role in the control of cell cycle and action of tumor suppressor proteins and is also a target of the transforming proteins of small DNA tumor viruses.
+ It represses MEF2 activity through recruitment of multicomponent corepressor complexes that include CtBP and HDACs
+Neural cell adhesion molecule involved in the dynamics of cell adhesion and in the generation of transmembrane signals at tyrosine kinase receptors.
+enzyme belonging to the family of fucosyltransferases.  The expression of this gene may contribute to the malignancy of cancer cells and to their invasive and metastatic capabilities
+Since suppression of the protein is associated with accelerated apoptosis, it is also suggested to have an important cytoprotective role in hypoxia-induced cellular perturbation. This protein has been shown to be up-regulated in tumors, especially in breast tumors, and thus it is associated with tumor invasiveness.
+Collagenase gene family. 
+Zinc-finger proteins bind nucleic acids and play important roles in various cellular functions, including cell proliferation, differentiation, and apoptosis.
+
+Predicted to be involved in regulation of transcription by RNA polymerase II
+ Modulates p53/TP53 activity to regulate cell cycle and survival during metabolic stress.
+Appears to play a role in the switch from cap-dependent to IRES-mediated translation during mitosis, apoptosis and viral infection.
+
+This gene encodes a member of the ALEX family of proteins which may play a role in tumor suppression. 
+This gene encodes a member of the Rho family of small GTPases, which cycle between inactive GDP-bound and active GTP-bound states and function as molecular switches in signal transduction cascades. Rho proteins promote reorganization of the actin cytoskeleton and regulate cell shape, attachment, and motility
+Regulation of processes involving cell contact and adhesion such as growth control, tumor invasion, and metastasis. Negative regulator of EGFR signaling pathway
+ Loss or altered expression of this gene has been associated with the pathogenesis of a variety of cancers, which suggests the tumor suppressor function of this gene. The inactivation of this gene was found to be correlated with the hypermethylation of its CpG-island promoter region. The encoded protein was found to interact with DNA repair protein XPA. The protein was also shown to inhibit the accumulation of cyclin D1, and thus induce cell cycle arrest.
+Sequence-specific DNA-binding transcription factor. May regulate the expression of proteins involved in extracellular matrix development and maintenance, including fibrillar collagens, such as COL4A1 and COL11A1, connective tissue components, such as HAPLN1, and molecules regulating cell migration and adhesion, including EDIL3 and TGFB2. May cause G2/M arrest and apoptosis in cancer cells.
+This gene encodes a member of the BCL-2 protein family. The proteins of this family form hetero- or homodimers and act as anti- and pro-apoptotic regulators. Expression of this gene in cells has been shown to contribute to reduced cell apoptosis under cytotoxic conditions.
+Dephosphorylates tyrosine-phosphorylated NEDD9/CAS-L 
+Binds specifically to collagen. Could be involved as a chaperone in the biosynthetic pathway of collagen. 
+Homeodomain proteins are sequence-specific transcription factors that share a highly conserved DNA-binding domain and play fundamental roles in cell proliferation, differentiation, and death. 
+The protein encoded by this gene forms a heterodimer with MSH2 to form MutS beta, part of the post-replicative DNA mismatch repair system. MutS beta initiates mismatch repair by binding to a mismatch and then forming a complex with MutL alpha heterodimer
+involved in B-lymphocyte antigen receptor signaling and germinal-center B-cell maturation.
+Potently inhibits endothelial cell proliferation and angiogenesis
+Potential tumor suppressor in gliomas
+Involved in the cell-cell adhesion. Has calcium- and magnesium-independent cell-cell adhesion activity. May have tumor-suppressor activity
+The product of this gene is part of a protein complex that regulates the endocytosis of growth factor receptors. The encoded protein directly interacts with a GTPase activating protein that functions downstream of the small G protein Ral. Its expression can negatively affect receptor internalization and inhibit growth factor signaling.
+
+

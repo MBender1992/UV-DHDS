@@ -1,9 +1,11 @@
-install.packages(c("tm", "wordcloud","SnowballC","magrittr"))
+install.packages(c("tm", "wordcloud2","SnowballC","magrittr"))
 library(tm)
 library(wordcloud2)
 library(SnowballC)
 library(magrittr)
 library(dplyr)
+
+
 
 text <- readLines('Data/wc_trial.txt')
 docs <- Corpus(VectorSource(text))

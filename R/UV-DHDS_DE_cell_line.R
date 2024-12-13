@@ -24,9 +24,15 @@ res <- results(dds, lfcThreshold = lfcThres, alpha = pThres,
 ##*********************************************************************************************************
 ## Ma plots
 
-## shrink LFCs
+## shrink LFCs and annotate results object
 resShrunk <- lfcShrink(dds, res = res, contrast = c("cell", "Melanocytes", "DSC"), type="ashr")
-
+allRes <- cbind(ENSEMBL = rownames(res), res)
+allRes <- if (dim(anno)[1] == dim(allRes)[1]) {
+  left_join(as.data.frame(allRes), anno)
+} else {
+  stop("Dimensions of annotation object and result object are different.")
+}
+allRes <- allRes[!str_detect(allRes$ENSEMBL, "\\."), ]
 
 # plot with original lfc
 svg("Results/cell_line/MA_plot_original.svg", width=9, height=6)
@@ -135,3 +141,27 @@ Ht <- Heatmap(datScaled,col= col_fun,
 svg("Results/cell_line/Heatmap.svg", width=12, height=15)
 draw(Ht, merge_legend = TRUE)
 dev.off()
+
+
+##*********************************************************************************************************
+## GO analysis
+
+##******
+## store upregulated genes in a list
+genes_upregulated <- allRes[allRes$padj < pThres & allRes$log2FoldChange > 0 & !is.na(allRes$padj) & !is.na(allRes$ENTREZID), ]$ENTREZID
+## plot enriched go terms
+ls_go_upregulated <- plot_go(genes_upregulated, showCategory = 30, sym.colors = TRUE, path = "Results/cell_line/GOBP/", return.res = TRUE)
+
+## search for certain go terms
+## everything connected to melanocytes and pigmentation
+search_go(enrich.res = ls_go_upregulated$enrich_go, all.res = allRes, path = "Results/cell_line/GOBP/", search.string = "[Mm]el|[Pp]ig")
+
+##******
+## store downregulated genes in a list
+genes_downregulated <- allRes[allRes$padj < pThres & allRes$log2FoldChange < 0 & !is.na(allRes$padj) & !is.na(allRes$ENTREZID), ]$ENTREZID
+## plot enriched pathways
+ls_go_downregulated <- plot_go(genes_downregulated, showCategory = 30, sym.colors = TRUE, path = "Results/cell_line/GOBP/", return.res = TRUE)
+
+
+
+

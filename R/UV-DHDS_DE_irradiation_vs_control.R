@@ -55,35 +55,6 @@ plot_volcano <- function(results, title = ""){
                   pCutoff = pThres, FCcutoff = 1, pointSize = 3.5, labSize = 5.5) 
 }
 
-## function to list significantly up or downregulated genes (as ENTREZIDs) for cluster profiler
-list_signif_genes <- function(x, data,  direction = c("greater", "lesser")){
-  tmp <- data[[x]]
-  if(direction == "greater"){
-    res <- tmp[!is.na(tmp$padj) & tmp$padj < pThres & !is.na(tmp$ENTREZID) & tmp$log2FoldChange > 0, ]$ENTREZID
-  }   else if(direction == "lesser"){
-    res <- tmp[!is.na(tmp$padj) & tmp$padj < pThres & !is.na(tmp$ENTREZID) & tmp$log2FoldChange < 0, ]$ENTREZID
-  } else {
-    stop("Please specify a direction.")
-  }
-  res
-} ## --> INCLUDE IN EKBSEQ
-
-## function to do GO enrichment analysis on multiple lists of DE genes and plot results as dotplot
-plot_go_clusters <- function(gene.list, path){
-  names <- str_remove(deparse(substitute(gene.list)), "ls_")
-  ## calculate clustered pathways
-  ck <- compareCluster(geneCluster = gene.list, fun = enrichGO, ont = "BP", keyType = "ENTREZID", OrgDb = org.Hs.eg.db, pvalueCutoff = pThres)
-  ck <- enrichplot::pairwise_termsim(ck) 
-  ck <- setReadable(ck, OrgDb = org.Hs.eg.db, keyType="ENTREZID")
-  
-  p <- dotplot(ck, font.size = 11) + theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
-  svg(paste0(path, names, "_GOBP.svg"), width=6, height=14)
-  print(p)
-  dev.off()
-}
-
-## direct contrasts between conditions (siehe Blog, mit diff2-diff1)
-
 ##*********************************************************************************************************
 ## Data wrangling
 
@@ -185,14 +156,14 @@ dev.off()
 ## GO analysis
 
 ## store upregulated genes in a list
-ls_upregulated <- lapply(1:length(res_shrunk), list_signif_genes, data = res_shrunk, direction = "greater")
+ls_upregulated <- list_signif_genes(list = res_shrunk, p.threshold = pThres, direction = "greater")
 names(ls_upregulated) <- names(res_shrunk)
 ## plot enriched pathways
 plot_go_clusters(ls_upregulated, path = "Results/irradiation_vs_control/GOBP/")
 
 ## store downregulated genes in a list
-ls_downregulated <- lapply(1:length(res_shrunk), list_signif_genes, data = res_shrunk, direction = "lesser")
+ls_downregulated <- list_signif_genes(list = res_shrunk, p.threshold = pThres, direction = "lesser")
 names(ls_downregulated) <- names(res_shrunk)
 ## plot enriched pathways
-plot_go_clusters(ls_downregulated, path = "Results/irradiation_vs_control/GOBP/")
+plot_go_clusters(ls_downregulated, path = "Results/irradiation_vs_control/GOBP/", sym.colors = TRUE)
 

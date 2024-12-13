@@ -10,6 +10,8 @@ library(RColorBrewer)
 library(openxlsx)
 library(gridExtra)
 library(EnhancedVolcano)
+library(org.Hs.eg.db)
+library(clusterProfiler)
 
 
 ##*********************************************************************************************************
@@ -64,7 +66,7 @@ plot_volcano <- function(results, title = ""){
                   pCutoff = pThres, FCcutoff = 1, pointSize = 3.5, labSize = 5.5) 
 }
 
-##*********************************************************************************************************
+##********************************************************************************************************
 ## Data wrangling
 
 ## extract unique conditions
@@ -111,5 +113,20 @@ svg("Results/irradiation_DSC_vs_Melanocytes/volcano_arranged.svg", width=12, hei
 do.call("grid.arrange", c(volcanos, ncol=2))
 dev.off()
 
+
+##*********************************************************************************************************
+## GO analysis
+
+## store upregulated genes in a list
+ls_upregulated <- list_signif_genes(list = res_shrunk, p.threshold = pThres, direction = "greater")
+names(ls_upregulated) <- names(res_shrunk)
+## plot enriched pathways
+plot_go_clusters(ls_upregulated, sym.colors = TRUE, path = "Results/irradiation_DSC_vs_Melanocytes/GOBP/")
+
+## store downregulated genes in a list
+ls_downregulated <- list_signif_genes(list = res_shrunk, p.threshold = pThres,  direction = "lesser")
+names(ls_downregulated) <- names(res_shrunk)
+## plot enriched pathways
+plot_go_clusters(ls_downregulated, path = "Results/irradiation_DSC_vs_Melanocytes/GOBP/")
 
 
