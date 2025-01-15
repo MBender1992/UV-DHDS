@@ -33,6 +33,8 @@ allRes <- if (dim(anno)[1] == dim(allRes)[1]) {
   stop("Dimensions of annotation object and result object are different.")
 }
 allRes <- allRes[!str_detect(allRes$ENSEMBL, "\\."), ]
+sigRes <- allRes[!is.na(allRes$padj) & allRes$padj < pThres,]
+
 
 # plot with original lfc
 svg("Results/cell_line/MA_plot_original.svg", width=9, height=6)
@@ -161,6 +163,7 @@ search_go(enrich.res = ls_go_upregulated$enrich_go, all.res = allRes, path = "Re
 genes_downregulated <- allRes[allRes$padj < pThres & allRes$log2FoldChange < 0 & !is.na(allRes$padj) & !is.na(allRes$ENTREZID), ]$ENTREZID
 ## plot enriched pathways
 ls_go_downregulated <- plot_go(genes_downregulated, showCategory = 30, sym.colors = TRUE, path = "Results/cell_line/GOBP/", return.res = TRUE)
+
 
 
 

@@ -167,3 +167,4 @@ names(ls_downregulated) <- names(res_shrunk)
 ## plot enriched pathways
 plot_go_clusters(ls_downregulated, path = "Results/irradiation_vs_control/GOBP/", sym.colors = TRUE)
 
+
