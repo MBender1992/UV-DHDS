@@ -1,4 +1,5 @@
 ## <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<HEAD>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 ##*********************************************************************************************************
 
 ## load packages
@@ -7,9 +8,8 @@ library(DESeq2)
 library(readxl)
 library(org.Hs.eg.db)
 library(AnnotationDbi)
-library(ashr)
 library(ekbSeq) ## install with devtools::install_github("https://github.com/MBender1992/ekbSeq")
-library(PoiClaClu)
+
 
 ##*********************************************************************************************************
 ## Load data
@@ -52,21 +52,16 @@ dds <- DESeqDataSet(se, design = ~ donor + condition)
 ## run DESeq
 dds <- DESeq(dds, parallel = TRUE)
 
+## add metadata to DESeq object with attributes
+attr(dds, "thresholds") <- list(
+  pvalue = pThres, 
+  lfc = lfcThres
+)
+
 ##*********************************************************************************************************
-## Exploratory data analysis
+## Data transformation
 
-##******
-##* Poisd
-
-## calculate Poisson distances and define parameters for graphical representation
-poisd <- PoissonDistance(t(counts(dds)))
-samplePoisDistMatrix <- as.matrix(poisd$dd)
-rownames(samplePoisDistMatrix) <- colData(se)$sample
-colnames(samplePoisDistMatrix) <- NULL
-colorsPoisd <- colorRampPalette(rev(RColorBrewer::brewer.pal(9, "Blues")))(255)
-
-##******
-##* Transform data
+## Transform data
 vsd_raw <- vst(dds, blind = FALSE)
 
 ## remove batch effect
@@ -76,8 +71,7 @@ mat <- limma::removeBatchEffect(mat, vsd_adjusted[["donor"]])
 assay(vsd_adjusted) <- mat
 mat <- NULL
 
-##******
-##* Construct annotation object
+## Construct annotation object
 anno <- AnnotationDbi::select(org.Hs.eg.db, rownames(dds), 
                               columns=c("ENSEMBL", "ENTREZID", "SYMBOL", "GENENAME"), 
                               keytype="ENSEMBL")
@@ -85,5 +79,15 @@ anno <- AnnotationDbi::select(org.Hs.eg.db, rownames(dds),
 ## remove duplicated ENSEMBL ID entries
 anno <- anno %>% filter(!duplicated(ENSEMBL))
 
+## store processed objects as list
+processed_data <- list(dds = dds, 
+                       se = se, 
+                       vsd_unadjusted = vsd_raw, 
+                       vsd_adj = vsd_adjusted, 
+                       anno = anno,
+                       SkinMarkerGenes = SkinMarkerGenes)
+
+## processsed data
+saveRDS(processed_data, "Data/processed_data.rds")
 
 

@@ -1,10 +1,14 @@
 ## <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<HEAD>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ##*********************************************************************************************************
 
+## clear workspace
+rm(list = ls())
+gc()
+
 ## load packages
 library(tidyverse)
 library(DESeq2)
-library(ekbSeq) ## install with devtools::install_github("https://github.com/MBender1992/ekbSeq")
+library(ekbSeq)
 library(ComplexHeatmap)
 library(RColorBrewer)
 library(openxlsx)
@@ -52,14 +56,24 @@ plot_volcano <- function(results, title = ""){
   EnhancedVolcano(as.data.frame(results), lab = results$SYMBOL, 
                   x = 'log2FoldChange', y = 'padj', gridlines.major = FALSE, gridlines.minor = FALSE,
                   xlim = c(-8, 8), ylim = c(-0.5, 40),  title = title, 
-                  pCutoff = pThres, FCcutoff = 1, pointSize = 3.5, labSize = 5.5) 
+                  pCutoff = pThres, FCcutoff = 1, pointSize = 2, labSize = 4) 
 }
 
 ##*********************************************************************************************************
 ## Data wrangling
 
+## load data
+processed_data <- readRDS("Data/processed_data.rds")
+dds <- processed_data$dds
+se  <- processed_data$se
+anno <- processed_data$anno
+vsd_adjusted <- processed_data$vsd_adj
+pThres <- dds@thresholds$pvalue
+lfcThres <- dds@thresholds$lfc
+rm(processed_data)
+
 ## extract unique conditions
-conditions <- as.character(unique(colData$condition))
+conditions <- as.character(unique(colData(dds)$condition))
 
 ## define contrasts
 input <- data.frame(treated  = c(conditions[seq(2,11,3)], conditions[seq(3,12,3)]),

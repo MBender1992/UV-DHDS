@@ -4,7 +4,7 @@
 ## load packages
 library(tidyverse)
 library(DESeq2)
-library(ekbSeq)
+library(ekbSeq) ## install with devtools::install_github("https://github.com/MBender1992/ekbSeq")
 library(ComplexHeatmap)
 library(RColorBrewer)
 library(openxlsx)
@@ -18,7 +18,7 @@ library(clusterProfiler)
 ## Custom function only used within this script
 
 ## function to save multiple results from dds object into list
-apply_contrasts2 <- function(trt1, ctrl1, trt2, ctrl2, annObj = NULL, shrink = FALSE){
+apply_contrasts <- function(trt1, ctrl1, trt2, ctrl2, annObj = NULL, shrink = FALSE){
   
   # irradiated in group1
   diff1 <-  contraster(dds,
@@ -80,7 +80,7 @@ input <- data.frame(treated1  = conditions[c(8,9,11,12)],
 input$contrasts <- paste0(input[,3], "_vs_", input[,1])
 
 ## save multiple contrasts
-res_shrunk <- mapply(apply_contrasts2, trt1 = input[,3], ctrl1 = input[,4], trt2 = input[,1], ctrl2 = input[,2], SIMPLIFY = FALSE, MoreArgs = list(shrink = TRUE, annObj = anno))
+res_shrunk <- mapply(apply_contrasts, trt1 = input[,3], ctrl1 = input[,4], trt2 = input[,1], ctrl2 = input[,2], SIMPLIFY = FALSE, MoreArgs = list(shrink = TRUE, annObj = anno))
 
 ## define names of contrasts
 names(res_shrunk) <- input$contrasts
@@ -88,7 +88,7 @@ names(res_shrunk) <- input$contrasts
 ##*********************************************************************************************************
 ## Plot MA plots
 
-res_MA <- mapply(apply_contrasts2, trt1 = input[,3], ctrl1 = input[,4], trt2 = input[,1], ctrl2 = input[,2], SIMPLIFY = FALSE, MoreArgs = list(shrink = FALSE))
+res_MA <- mapply(apply_contrasts, trt1 = input[,3], ctrl1 = input[,4], trt2 = input[,1], ctrl2 = input[,2], SIMPLIFY = FALSE, MoreArgs = list(shrink = FALSE))
 
 ## loop over plotMA to get MA plots for the 8 conditions
 ma_plots <- lapply(1:length(res_shrunk), function(i){
@@ -101,7 +101,7 @@ ma_plots <- lapply(1:length(res_shrunk), function(i){
 ## Plot volcano plots
 
 ## define new results object without shrinkage to plot as volcano plot
-res_volcano <- mapply(apply_contrasts2, trt1 = input[,3], ctrl1 = input[,4], trt2 = input[,1], ctrl2 = input[,2], SIMPLIFY = FALSE, MoreArgs = list(shrink = FALSE, annObj = anno))
+res_volcano <- mapply(apply_contrasts, trt1 = input[,3], ctrl1 = input[,4], trt2 = input[,1], ctrl2 = input[,2], SIMPLIFY = FALSE, MoreArgs = list(shrink = FALSE, annObj = anno))
 
 ## loop over plot_volcano to get volcano plots for the 8 conditions
 volcanos <- lapply(1:length(res_volcano), function(i){

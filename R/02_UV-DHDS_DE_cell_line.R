@@ -1,16 +1,33 @@
 ## <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<HEAD>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ##*********************************************************************************************************
 
+## clear workspace
+rm(list = ls())
+gc()
+
 ## load packages
 library(tidyverse)
 library(DESeq2)
-library(ekbSeq) ## install with devtools::install_github("https://github.com/MBender1992/ekbSeq")
+library(ekbSeq)
+library(ashr)
 library(ComplexHeatmap)
 library(EnhancedVolcano)
 library(circlize)
+library(RColorBrewer)
+library(ggprism)
 
 ##*********************************************************************************************************
 ## Differential expression analysis for differences in cell lines
+
+## load data
+processed_data <- readRDS("Data/processed_data.rds")
+dds <- processed_data$dds
+se  <- processed_data$se
+anno <- processed_data$anno
+vsd_adjusted <- processed_data$vsd_adj
+pThres <- dds@thresholds$pvalue
+lfcThres <- dds@thresholds$lfc
+rm(processed_data)
 
 ## extract results
 res <- results(dds, lfcThreshold = lfcThres, alpha = pThres, 
@@ -59,8 +76,8 @@ dat_volcano <- left_join(as.data.frame(dat_volcano), anno)
 res_volcano <- NULL
 
 ## parameters for Volcano plot
-pointSize <- 3.5
-labSize   <- 5.5
+pointSize <- 2
+labSize   <- 4
 
 # plot Volcano
 # this only serves as diagnostic and representation tool. the actual fold change thresholds and pvalues change later due to the way the results function works
@@ -97,6 +114,7 @@ colors  <-  colorRampPalette(rev(brewer.pal(n = 7, name = "RdYlBu")))(100)
 col_fun <- colorRamp2(c(-2, 0, 2), c(c(colors[1], colors[51], colors[100])))
 
 ## Heatmap of all DE genes
+ind <- colData(dds)$irradiation == "Control"
 matAll <- assay(vsd_adjusted)[sigRes$ENSEMBL, ind]
 
 ## scale matrix
@@ -118,24 +136,24 @@ annColors <- HeatmapAnnotation(df =annoHeatmap,
 
 ## plot Heatmap
 Ht <- Heatmap(datScaled,col= col_fun,
-        top_annotation = annColors,
-        clustering_method_row = "average",
-        clustering_method_columns = "average",
-        clustering_distance_row = "pearson",
-        clustering_distance_column = "euclidean",
-        show_row_dend = FALSE,
-        show_row_names =  FALSE,
-        show_column_names = TRUE,
-        column_names_gp = gpar(fontsize = 10),
-        column_title = paste("Differentially Expressed genes (", nrow(sigRes), ")", sep =""),
-        heatmap_legend_param = list(
-          title = "row Z-score",
-          at = seq(-2,2,by=1),
-          color_bar="continuous",
-          title_position ="topcenter",
-          legend_direction = "horizontal",
-          legend_width = unit(4, "cm")
-        ))
+              top_annotation = annColors,
+              clustering_method_row = "average",
+              clustering_method_columns = "average",
+              clustering_distance_row = "pearson",
+              clustering_distance_column = "euclidean",
+              show_row_dend = FALSE,
+              show_row_names =  FALSE,
+              show_column_names = TRUE,
+              column_names_gp = gpar(fontsize = 10),
+              column_title = paste("Differentially Expressed genes (", nrow(sigRes), ")", sep =""),
+              heatmap_legend_param = list(
+                title = "row Z-score",
+                at = seq(-2,2,by=1),
+                color_bar="continuous",
+                title_position ="topcenter",
+                legend_direction = "horizontal",
+                legend_width = unit(4, "cm")
+              ))
 
 svg("Results/cell_line/Heatmap.svg", width=12, height=15)
 draw(Ht, merge_legend = TRUE)
@@ -149,7 +167,7 @@ dev.off()
 ## store upregulated genes in a list
 genes_upregulated <- allRes[allRes$padj < pThres & allRes$log2FoldChange > 0 & !is.na(allRes$padj) & !is.na(allRes$ENTREZID), ]$ENTREZID
 ## plot enriched go terms
-ls_go_upregulated <- plot_go(genes_upregulated, showCategory = 30, sym.colors = TRUE, path = "Results/cell_line/GOBP/", return.res = TRUE)
+ls_go_upregulated <- plot_go(genes_upregulated, showCategory = 30, sym.colors = TRUhttp://127.0.0.1:16689/graphics/plot_zoom_png?width=1364&height=863E, path = "Results/cell_line/GOBP/", return.res = TRUE)
 
 ## search for certain go terms
 ## everything connected to melanocytes and pigmentation

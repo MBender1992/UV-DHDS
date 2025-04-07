@@ -4,7 +4,7 @@
 ## load packages
 library(tidyverse)
 library(DESeq2)
-library(ekbSeq)
+library(ekbSeq) ## install with devtools::install_github("https://github.com/MBender1992/ekbSeq")
 library(ComplexHeatmap)
 library(RColorBrewer)
 library(openxlsx)

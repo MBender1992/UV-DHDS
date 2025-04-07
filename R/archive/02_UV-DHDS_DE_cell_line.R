@@ -4,13 +4,10 @@
 ## load packages
 library(tidyverse)
 library(DESeq2)
-library(ekbSeq)
+library(ekbSeq) ## install with devtools::install_github("https://github.com/MBender1992/ekbSeq")
 library(ComplexHeatmap)
 library(EnhancedVolcano)
 library(circlize)
-
-##*********************************************************************************************************
-## Custom function only used within this script
 
 ##*********************************************************************************************************
 ## Differential expression analysis for differences in cell lines
